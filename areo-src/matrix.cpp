@@ -25,10 +25,7 @@ Matrix::Matrix(init_matrix_t init_list) {
 
 Matrix::Matrix(const Matrix& other) {
     if (other.matrix_ != nullptr) {
-        if (this->matrix_ == nullptr) {
-            this->matrix_ = new double[other.rows_ * other.cols_];
-        }
-
+        this->matrix_ = new double[other.rows_ * other.cols_];
         std::memcpy(
             this->matrix_, other.matrix_, other.cols_ * other.rows_ * sizeof(double)
         );
@@ -40,7 +37,7 @@ Matrix::Matrix(const Matrix& other) {
 }
 
 Matrix::Matrix(Matrix&& other) {
-    if (&other != this) {
+    if (&other != this) {   
         this->matrix_ = other.matrix_;
         this->rows_ = other.rows_;
         this->cols_ = other.cols_;
@@ -49,4 +46,35 @@ Matrix::Matrix(Matrix&& other) {
         other.rows_ = 0;
         other.cols_ = 0;
     }
+}
+
+Matrix& Matrix::operator=(const Matrix& other) {
+    if (&other == this) {
+        return *this;
+    } 
+
+    delete[] this->matrix_;
+    this->matrix_ = new double[other.rows_ * other.cols_];
+    std::memcpy(
+        this->matrix_, other.matrix_, other.cols_ * other.rows_ * sizeof(double)
+    );
+    this->rows_ = other.rows_;
+    this->cols_ = other.cols_;
+
+    return *this;
+
+    // throw error here
+}
+
+Matrix& Matrix::operator=(Matrix&& other) {
+
+    this->matrix_ = other.matrix_;
+    this->rows_ = other.rows_;
+    this->cols_ = other.cols_;
+
+    other.matrix_ = nullptr;
+    other.rows_ = 0;
+    other.cols_ = 0;
+
+    return *this;
 }
