@@ -16,6 +16,8 @@ class Matrix {
 
 private:
     double* matrix_;
+    std::size_t rows_;
+    std::size_t cols_;
 
 public:
     /**
@@ -35,6 +37,20 @@ public:
      * @param other Matrix to move from.
      */
     explicit Matrix(Matrix&& other);
+
+    /**
+     * @brief Copy-assigns this matrix, deep-copying other's data.
+     * @param other Matrix to copy from.
+     * @return The resulting matrix.
+     */
+    Matrix operator=(const Matrix& other);
+
+    /**
+     * @brief Move-assigns this matrix, stealing other's data.
+     * @param other Matrix to move from.
+     * @return The resulting matrix.
+     */
+    Matrix operator=(Matrix&& other);
 
     ~Matrix();
 
