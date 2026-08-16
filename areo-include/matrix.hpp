@@ -154,6 +154,7 @@ public:
             matrix_.get(),
             [x](T element) { return element + x; }
         );
+        return *this;
     }
 
     /**
@@ -163,9 +164,12 @@ public:
      */
     Matrix& operator-=(const Matrix<T>& other)
     {
-        for (std::size_t i = 0; i < rows_ * cols_; ++i) {
-            matrix_[i] -= other.matrix_;
-        }
+        std::ranges::transform(
+            data(),
+            other.data(),
+            matrix_.get(),
+            std::minus<>{}
+        );
         return *this;
     }
 
@@ -176,9 +180,11 @@ public:
      */
     Matrix& operator-=(T x)
     {
-        for (std::size_t i = 0; i < rows_ * cols_; ++i) {
-            matrix_[i] -= x;
-        }
+        std::ranges::transform(
+            data(),
+            matrix_.get(),
+            [x](T element){ return element - x; }
+        );
         return *this;
     }
 
@@ -199,9 +205,11 @@ public:
      */
     Matrix& operator*=(T x)
     {
-        for (std::size_t i = 0; i < rows_ * cols_; ++i) {
-            matrix_[i] *= x;
-        }
+        std::ranges::transform(
+            data(),
+            matrix_.get(),
+            [x](T element) { return element * x; }
+        );
         return *this;
     }
 
