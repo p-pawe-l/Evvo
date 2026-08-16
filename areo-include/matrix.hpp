@@ -14,6 +14,8 @@
 #include <vector>
 #include <functional>
 
+#include "matrix_exceptions.hpp"
+
 
 template <typename T> requires std::is_arithmetic_v<T>
 class Matrix {
@@ -106,6 +108,20 @@ public:
     std::span<const T> data() const noexcept
     {
         return {matrix_.get(), rows_ * cols_};
+    }
+
+    /**
+     * @brief Returns the element at the given row and column.
+     * @param row Row index (0-based).
+     * @param col Column index (0-based).
+     * @throws InvalidIndexException If row or col is out of bounds for this matrix.
+     */
+    T at(std::size_t row, std::size_t col) const
+    {
+        if (row > (rows_ - 1) || col > (cols_ - 1)) {
+            throw InvalidIndexException(row, col, rows_, cols_);
+        }
+        return matrix_.get()[row * cols_ + col];
     }
 
     /** @brief Negates every element of this matrix in place. */
@@ -221,7 +237,8 @@ public:
         cols_ ^= rows_; 
         rows_ ^= cols_;
 
-        // Transposing matrix logic        
+        // Transposing matrix logic 
+               
     }
 
     /** @brief Returns a transposed copy of this matrix, leaving this matrix unchanged. */

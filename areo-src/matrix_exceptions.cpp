@@ -14,3 +14,17 @@ InvalidDimsException::InvalidDimsException(
 const char* InvalidDimsException::what() const noexcept {
     return message_.c_str();
 }
+
+InvalidIndexException::InvalidIndexException(
+    std::size_t row, std::size_t col,
+    std::size_t rows, std::size_t cols
+) {
+    message_ = "Matrix index out of bounds: requested ("
+        + std::to_string(row) + ", " + std::to_string(col)
+        + ") in a " + std::to_string(rows) + "x" + std::to_string(cols)
+        + " matrix.";
+}
+
+const char* InvalidIndexException::what() const noexcept {
+    return message_.c_str();
+}
