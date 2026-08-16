@@ -78,3 +78,39 @@ Matrix& Matrix::operator=(Matrix&& other) {
 
     return *this;
 }
+
+Matrix::~Matrix() {
+    if (matrix_ != nullptr) {
+        delete[] matrix_;
+    }
+}
+
+Matrix& Matrix::operator+(const Matrix& other) {
+    if (!this->is_same_dims(other)) {
+        // throw error here
+    }
+    
+    for (std::size_t i = 0; i < this->rows_ * this->cols_; ++i) {
+        this->matrix_[i] += other.matrix_[i];
+    }
+    return *this;
+}
+
+Matrix& Matrix::operator+(Matrix&& other) {
+    if (!this->is_same_dims(other)) {
+        // throw error here        
+    }
+    
+    for (std::size_t i = 0; i < this->rows_ * this->cols_; ++i) {
+        this->matrix_[i] += std::move(other.matrix_[i]);
+    }
+    return *this;
+}
+
+Matrix& Matrix::operator+(double diff) {
+    for (std::size_t i = 0; i < this->rows_ * this->cols_; ++i) {
+        this->matrix_[i] += diff;
+    }
+    return *this;
+}
+
