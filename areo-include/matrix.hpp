@@ -99,13 +99,13 @@ public:
     }
 
     /** @brief Returns a mutable view over the underlying row-major element buffer. */
-    std::span<T> data() noexcept
+    [[nodiscard]] std::span<T> data() noexcept
     {
         return {matrix_.get(), rows_ * cols_};
     }
 
     /** @brief Returns a read-only view over the underlying row-major element buffer. */
-    std::span<const T> data() const noexcept
+    [[nodiscard]] std::span<const T> data() const noexcept
     {
         return {matrix_.get(), rows_ * cols_};
     }
@@ -116,7 +116,7 @@ public:
      * @param col Column index (0-based).
      * @throws InvalidIndexException If row or col is out of bounds for this matrix.
      */
-    T at(std::size_t row, std::size_t col) const
+    [[nodiscard]] T at(std::size_t row, std::size_t col) const
     {
         if (row > (rows_ - 1) || col > (cols_ - 1)) {
             throw InvalidIndexException(row, col, rows_, cols_);
@@ -135,7 +135,7 @@ public:
     }
 
     /** @brief Returns a copy of this matrix with every element negated. */
-    Matrix get_negated() const noexcept
+    [[nodiscard]] Matrix get_negated() const noexcept
     {
         Matrix temp(*this); // maybe can be optimized in order not to use copy constructor ?
         temp.negate();
@@ -242,7 +242,7 @@ public:
     }
 
     /** @brief Returns a transposed copy of this matrix, leaving this matrix unchanged. */
-    Matrix get_transposed() const noexcept
+    [[nodiscard]] Matrix get_transposed() const noexcept
     {
         Matrix temp(*this);
         temp.transpose();
