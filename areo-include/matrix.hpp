@@ -213,11 +213,23 @@ public:
         return *this;
     }
 
+    /** @brief Transposes this matrix in place, swapping rows and columns. */
+    void transpose() noexcept
+    {
+        // swapping number of rows and columns
+        rows_ ^= cols_;
+        cols_ ^= rows_; 
+        rows_ ^= cols_;
 
+        // Transposing matrix logic        
+    }
 
-    
-    
-
-
+    /** @brief Returns a transposed copy of this matrix, leaving this matrix unchanged. */
+    Matrix get_transposed() const noexcept
+    {
+        Matrix temp(*this);
+        temp.transpose();
+        return temp;
+    }
 };
 
