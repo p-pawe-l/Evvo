@@ -4,11 +4,15 @@
  */
 
 #pragma once
+
 #include <algorithm>
+#include <cstring>
 #include <initializer_list>
 #include <memory>
+#include <span>
 #include <type_traits>
 #include <vector>
+#include <functional>
 
 
 template <typename T> requires std::is_arithmetic_v<T>
@@ -18,60 +22,129 @@ private:
     std::size_t rows_, cols_;
 
 public:
+    /**
+     * @brief Constructs a matrix by copying from a raw buffer.
+     * @param data Pointer to at least rows*cols contiguous elements, stored row-major.
+     * @param rows Number of rows.
+     * @param cols Number of columns.
+     */
     Matrix(const T* data, std::size_t rows, std::size_t cols):
-    matrix_(std::make_unique<double[]>(rows * cols)),
+    matrix_(std::make_unique<T[]>(rows * cols)),
     rows_(rows),
     cols_(cols)
     {
         std::copy(data, data + rows * cols, matrix_.get());
     }
-    template <class _InputIterator> 
+
+    /**
+     * @brief Constructs a matrix by copying from an iterator range.
+     * @param first Iterator to the first element (row-major order).
+     * @param last Iterator to one past the last element.
+     * @param rows Number of rows.
+     * @param cols Number of columns.
+     */
+    template <class _InputIterator>
     Matrix(_InputIterator first, _InputIterator last, std::size_t rows, std::size_t cols):
-    matrix_(std::make_unique<double[]>(rows * cols)),
+    matrix_(std::make_unique<T[]>(rows * cols)),
     rows_(rows),
     cols_(cols)
     {
         std::copy(first, last, matrix_.get());
     }
+
+    /**
+     * @brief Constructs a matrix from a vector of rows.
+     * @param collection Row-major nested vector; all rows must be the same length.
+     */
     explicit Matrix(const std::vector<std::vector<double>>& collection):
     Matrix(collection.begin(), collection.end(), collection.size(), collection.front().size())
     {}
 
+    /**
+     * @brief Constructs a matrix from a nested brace-init-list, e.g. {{1, 2}, {3, 4}}.
+     * @param collection Row-major nested initializer list; all rows must be the same length.
+     */
     Matrix(std::initializer_list<std::initializer_list<double>> collection):
-    Matrix(collection.begin(), collection.end(), collection.size(), collection.front().size())
+    Matrix(collection.begin(), collection.end(), collection.size(), collection.begin()->size())
     {}
+
+    /**
+     * @brief Constructs a matrix with every element set to the same value.
+     * @param value Fill value for all elements.
+     * @param rows Number of rows.
+     * @param cols Number of columns.
+     */
+    explicit Matrix(T value, std::size_t rows, std::size_t cols):
+    matrix_(std::make_unique<T[]>(rows * cols)),
+    rows_(rows),
+    cols_(cols)
+    {
+        std::fill_n(matrix_, rows_ * cols_, value);
+    }
 
     Matrix(Matrix<T>&&) noexcept = default;
     Matrix& operator=(Matrix<T>&&) noexcept = default;
 
-    Matrix(const Matrix<T>& other): 
+    /** @brief Copy-constructs a matrix, deep-copying the underlying data. */
+    Matrix(const Matrix<T>& other):
     Matrix(other.matrix_.get(), other.rows_, other.cols_)
-    {}
+    {}  
+
+    /** @brief Copy-assigns a matrix, deep-copying the underlying data. */
     Matrix& operator=(const Matrix<T>& other)
     {
         return *this = Matrix(other);
     }
 
-    void negate() noexcept 
+    /** @brief Negates every element of this matrix in place. */
+    void negate() noexcept
     {
-        for (std::size_t i = 0; i < rows_ * cols_; ++i) {
-            matrix_[i] = -matrix_[i];
-        }
+        std::ranges::transform(
+            std::span(matrix_.get(), rows_ * cols_),
+            matrix_.get(),
+            std::negate<>{}
+        );
     }
-    Matrix get_negated() const noexcept 
+
+    /** @brief Returns a copy of this matrix with every element negated. */
+    Matrix get_negated() const noexcept
     {
         Matrix temp(*this);
         temp.negate();
         return temp;
     }
 
-    Matrix& operator+=(const Matrix<T>& other) 
+    /**
+     * @brief Adds another matrix to this one element-wise, in place.
+     * @param other Matrix of the same dimensions.
+     * @return Reference to this matrix.
+     */
+    Matrix& operator+=(const Matrix<T>& other)
     {
         for (std::size_t i = 0; i < rows_ * cols_; ++i) {
-            matrix_[i] += other.matrix_;
+            matrix_[i] += other.matrix_[i];
         }
         return *this;
     }
+
+    /**
+     * @brief Adds a scalar to every element of this matrix, in place.
+     * @param x Scalar to add.
+     * @return Reference to this matrix.
+     */
+    Matrix& operator+=(T x)
+    {
+        for (std::size_t i = 0; i < rows_ * cols_; ++i) {
+            matrix_[i] += x;
+        }
+        return *this;
+    }
+
+    /**
+     * @brief Subtracts another matrix from this one element-wise, in place.
+     * @param other Matrix of the same dimensions.
+     * @return Reference to this matrix.
+     */
     Matrix& operator-=(const Matrix<T>& other)
     {
         for (std::size_t i = 0; i < rows_ * cols_; ++i) {
@@ -79,6 +152,48 @@ public:
         }
         return *this;
     }
+
+    /**
+     * @brief Subtracts a scalar from every element of this matrix, in place.
+     * @param x Scalar to subtract.
+     * @return Reference to this matrix.
+     */
+    Matrix& operator-=(T x)
+    {
+        for (std::size_t i = 0; i < rows_ * cols_; ++i) {
+            matrix_[i] -= x;
+        }
+        return *this;
+    }
+
+    /**
+     * @brief Multiplies this matrix by another, in place.
+     * @param other Matrix to multiply by.
+     * @return Reference to this matrix.
+     */
+    Matrix& operator*=(const Matrix<T>& other)
+    {
+        // matrix multiplication operation
+    }
+
+    /**
+     * @brief Multiplies every element of this matrix by a scalar, in place.
+     * @param x Scalar to multiply by.
+     * @return Reference to this matrix.
+     */
+    Matrix& operator*=(T x)
+    {
+        for (std::size_t i = 0; i < rows_ * cols_; ++i) {
+            matrix_[i] *= x;
+        }
+        return *this;
+    }
+
+
+
+    
+    
+
 
 };
 
