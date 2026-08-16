@@ -96,11 +96,23 @@ public:
         return *this = Matrix(other);
     }
 
+    /** @brief Returns a mutable view over the underlying row-major element buffer. */
+    std::span<T> data() noexcept
+    {
+        return {matrix_.get(), rows_ * cols_};
+    }
+
+    /** @brief Returns a read-only view over the underlying row-major element buffer. */
+    std::span<const T> data() const noexcept
+    {
+        return {matrix_.get(), rows_ * cols_};
+    }
+
     /** @brief Negates every element of this matrix in place. */
     void negate() noexcept
     {
         std::ranges::transform(
-            std::span(matrix_.get(), rows_ * cols_),
+            data(),
             matrix_.get(),
             std::negate<>{}
         );
@@ -109,7 +121,7 @@ public:
     /** @brief Returns a copy of this matrix with every element negated. */
     Matrix get_negated() const noexcept
     {
-        Matrix temp(*this);
+        Matrix temp(*this); // maybe can be optimized in order not to use copy constructor ?
         temp.negate();
         return temp;
     }
@@ -120,10 +132,13 @@ public:
      * @return Reference to this matrix.
      */
     Matrix& operator+=(const Matrix<T>& other)
-    {
-        for (std::size_t i = 0; i < rows_ * cols_; ++i) {
-            matrix_[i] += other.matrix_[i];
-        }
+    {   
+        std::ranges::transform(
+            data(),        
+            other.data(),
+            matrix_.get(),                                     
+            std::plus<>{}                                      
+        );
         return *this;
     }
 
@@ -134,10 +149,11 @@ public:
      */
     Matrix& operator+=(T x)
     {
-        for (std::size_t i = 0; i < rows_ * cols_; ++i) {
-            matrix_[i] += x;
-        }
-        return *this;
+        std::ranges::transform(
+            data(),
+            matrix_.get(),
+            [x](T element) { return element + x; }
+        );
     }
 
     /**
