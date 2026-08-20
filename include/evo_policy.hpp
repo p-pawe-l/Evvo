@@ -6,11 +6,14 @@
 
 #pragma once
 
+#include <cassert>
 #include <cstddef>
 #include <functional>
 #include <vector>
 
 #include "genome.hpp"
+#include "population_init.hpp"
+#include "rand_util.hpp"
 
 /**
  * @brief Result of a single pass over a population evaluating every
@@ -42,8 +45,52 @@ protected:
     uint8_t crossover_prob_;
     uint8_t mutation_prob_;
 
+    PopulationVec<T> init_population_;
+    bool has_init_population_ = false;
+
 public:
     virtual ~EvoPolicy() = default;
+
+    /**
+     * @brief Sets the population create_init_population() will hand back,
+     *        moved in as-is.
+     * @param population Initial population to use; ownership is
+     *                    transferred into the policy.
+     */
+    void set_init_population(PopulationVec<T> population) {
+        this->init_population_ = std::move(population);
+        this->has_init_population_ = true;
+    }
+
+    /**
+     * @brief Configures create_init_population() to build a fresh
+     *        population of population_size genomes, each with genome_len
+     *        genes drawn uniformly from [lo, hi]. Whether that draw uses
+     *        an integer or real distribution is deduced from T (see
+     *        random_value in rand_util.hpp).
+     * @param population_size Number of individuals to generate.
+     * @param genome_len Number of genes per individual.
+     * @param lo Lower bound (inclusive) for each gene.
+     * @param hi Upper bound (inclusive) for each gene.
+     */
+    void set_random_init(std::size_t population_size, std::size_t genome_len, T lo, T hi) {
+        this->init_population_ = make_random_population<T>(
+            population_size, genome_len, [lo, hi]() { return random_value<T>(lo, hi); });
+        this->has_init_population_ = true;
+    }
+
+    /**
+     * @brief Hands back the population configured via
+     *        set_init_population() or set_random_init(); one of those
+     *        must have been called first.
+     * @return The initial population, moved out of the policy.
+     */
+    PopulationVec<T> create_init_population() {
+        assert(this->has_init_population_ &&
+            "EvoPolicy: call set_init_population() or set_random_init() before create_init_population()");
+        this->has_init_population_ = false;
+        return std::move(this->init_population_);
+    }
 
     /**
      * @brief Sets the fitness function used to score genomes.

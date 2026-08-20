@@ -69,6 +69,23 @@ public:
     }
 
     /**
+     * @brief Constructs a Genome of len genes, each produced by invoking
+     *        gene_gen once per gene (e.g. a random-value generator).
+     * @tparam Generator Callable with signature T().
+     * @param len Number of genes to generate.
+     * @param gene_gen Invoked once per gene to produce its value.
+     */
+    template <typename Generator>
+    Genome(std::size_t len, Generator gene_gen):
+    dna_seq_{std::make_unique<T[]>(len)},
+    len_{len}
+    {
+        for (std::size_t i = 0; i < this->len_; ++i) {
+            this->dna_seq_[i] = gene_gen();
+        }
+    }
+
+    /**
      * @brief Move-constructs a Genome, stealing other's DNA sequence.
      * @param other Genome to move from; left empty (nullptr, len 0).
      */
