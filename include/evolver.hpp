@@ -7,7 +7,8 @@
 #pragma once
 
 #include <cstdint>
-#include <vector>
+#include <functional>
+#include <memory>
 
 #include "genome.hpp"
 #include "evo_policy.hpp"
@@ -23,15 +24,15 @@
 template <typename T>
 class Evolver {
 private:
-    std::vector<Genome<T>*> init_population_;
+    PopulationVec<T> init_population_;
     uint8_t mutation_prob_;
     uint8_t crossover_prob_;
-    uint8_t (*cross_func_)(T*, T*);
-    uint8_t (*mut_func_)(T*);
+    std::function<IndPtr<T>(const IndPtr<T>&, const IndPtr<T>&)> cross_func_;
+    std::function<IndPtr<T>(const IndPtr<T>&)> mut_func_;
 
     EvoCallback<T>* callback_;
 
-    Genome<T>* best_genome_;
+    std::unique_ptr<Genome<T>> best_genome_;
     EvoPolicy<T>* policy_;
 
 
@@ -39,25 +40,28 @@ public:
     /**
      * @brief Constructs an Evolver with an initial population and the
      *        crossover/mutation functions and probabilities to use.
-     * @param init_population Starting population of genomes.
-     * @param cross_func Function applied to two DNA sequences to perform
-     *                   crossover.
-     * @param mut_func Function applied to a DNA sequence to perform
-     *                 mutation.
+     * @param init_population Starting population of genomes; ownership is
+     *                         transferred into the Evolver.
+     * @param cross_func Function applied to two parent individuals to
+     *                   produce a new offspring individual; decides
+     *                   itself which genes to combine and how.
+     * @param mut_func Function applied to a parent individual to produce
+     *                 a new, mutated offspring individual; decides itself
+     *                 which genes to change and how.
      * @param callback Callback invoked once per generation with that
      *                 generation's GenerationStats<T>.
      * @param policy Policy used to select, score, and evolve populations.
      * @param mutation_prob Probability threshold (0-255) for mutation.
      * @param crossover_prob Probability threshold (0-255) for crossover.
      */
-    Evolver(std::vector<Genome<T>*> init_population,
-            uint8_t (*cross_func)(T*, T*),
-            uint8_t (*mut_func)(T*),
+    Evolver(PopulationVec<T> init_population,
+            std::function<IndPtr<T>(const IndPtr<T>&, const IndPtr<T>&)> cross_func,
+            std::function<IndPtr<T>(const IndPtr<T>&)> mut_func,
             EvoCallback<T>* callback,
             EvoPolicy<T>* policy,
             uint8_t mutation_prob,
             uint8_t crossover_prob):
-    init_population_{init_population},
+    init_population_{std::move(init_population)},
     mutation_prob_{mutation_prob},
     crossover_prob_{crossover_prob},
     cross_func_{cross_func},
@@ -68,7 +72,8 @@ public:
     {}
 
     /**
-     * @brief Destroys the Evolver. Does not own the genomes it references.
+     * @brief Destroys the Evolver, freeing the population and best genome
+     *        it owns.
      */
     ~Evolver() = default;
 
@@ -78,10 +83,12 @@ public:
      * @param eval_func Fitness function used to score genomes.
      * @return The best genome found during evolution.
      */
-    Genome<T> run(int runs, double (*eval_func)(Genome<T>*)) {
+    Genome<T> run(int runs, std::function<double(Genome<T>*)> eval_func) {
         this->policy_->set_eval(eval_func);
+        this->policy_->set_cross_func(cross_func_, crossover_prob_);
+        this->policy_->set_mut_func(mut_func_, mutation_prob_);
 
-        std::vector<Genome<T>*> new_pop = this->init_population_;
+        PopulationVec<T> new_pop = std::move(this->init_population_);
         int generation = 0;
 
         while(runs > 0) {
@@ -89,8 +96,8 @@ public:
 
             Genome<T>* best = this->policy_->choose_best(new_pop);
             double best_fitness = eval_func(best);
-            if (this->best_genome_ == nullptr || best_fitness > eval_func(this->best_genome_)) {
-                this->best_genome_ = best;
+            if (this->best_genome_ == nullptr || best_fitness > eval_func(this->best_genome_.get())) {
+                this->best_genome_ = std::make_unique<Genome<T>>(*best);
             }
 
             GenerationStats<T> stats{

@@ -6,8 +6,6 @@
 
 #pragma once
 
-#include <vector>
-
 #include "genome.hpp"
 
 /**
@@ -17,7 +15,7 @@
 template <typename T>
 struct GenerationStats {
     int generation;
-    const std::vector<Genome<T>*>& population;
+    const PopulationVec<T>& population;
     double best_fitness;
     double avg_fitness;
     Genome<T>* best_genome;
