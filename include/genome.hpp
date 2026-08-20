@@ -1,33 +1,21 @@
 /**
  * @file genome.hpp
  * @brief Defines the Genome<T> container, which owns a heap-allocated DNA
- *        sequence and exposes mutation/crossover operations driven by
- *        caller-supplied function pointers.
+ *        sequence. Mutation/crossover are performed by free functions
+ *        (see EvoPolicy<T>::mut_func_/cross_func_) operating on IndPtr<T>,
+ *        not by Genome itself.
  */
 
 #pragma once
 
 #include <cstdint>
 #include <initializer_list>
+#include <memory>
 #include <utility>
-#include <random>
-
-namespace {
-    /**
-     * @brief Generates a uniformly distributed random value in [0, 255].
-     * @return A random uint8_t.
-     */
-    uint8_t random_uint8_t() {
-        static std::random_device rd;
-        static std::mt19937 gen(rd());
-        static std::uniform_int_distribution<unsigned> dist(0, 255);
-        return static_cast<uint8_t>(dist(gen));
-    }
-}
+#include <vector>
 
 /**
- * @brief Owns a heap-allocated sequence of genes of type T and provides
- *        mutation and crossover operations over that sequence.
+ * @brief Owns a heap-allocated sequence of genes of type T.
  * @tparam T Gene type stored in the DNA sequence.
  */
 template <typename T>
@@ -37,6 +25,30 @@ private:
     int len_;
 
 public:
+    /**
+     * @brief Accesses the raw DNA sequence.
+     * @return Pointer to the first gene in the sequence.
+     */
+    T* data() {
+        return this->dna_seq_;
+    }
+
+    /**
+     * @brief Accesses the raw DNA sequence.
+     * @return Pointer to the first gene in the sequence.
+     */
+    const T* data() const {
+        return this->dna_seq_;
+    }
+
+    /**
+     * @brief Number of genes in the DNA sequence.
+     * @return Length of the DNA sequence.
+     */
+    int size() const {
+        return this->len_;
+    }
+
     /**
      * @brief Constructs a Genome from an initializer list of genes.
      * @param seq Genes to move into the newly allocated DNA sequence.
@@ -49,7 +61,7 @@ public:
         }
         this->len_ = seq.size();
         for (int i = 0; i < this->len_; ++i) {
-            this->dna_seq_[i] = std::move(seq[i]);
+            this->dna_seq_[i] = std::move(seq.begin()[i]);
         }
     }
 
@@ -119,45 +131,18 @@ public:
         }
     }
 
-    /**
-     * @brief Randomly decides whether to mutate this genome and, if so,
-     *        applies the caller-supplied mutation function to its DNA.
-     * @param mut_prob Probability threshold (0-255) compared against a
-     *                 random draw to decide whether mutation occurs.
-     * @param mut_func Function applied to the DNA sequence to perform the
-     *                 mutation; returns 0 on failure, 1 on success.
-     * @return 0 on mutation failure, 1 on success, 0x02 if no mutation was
-     *         performed.
-     */
-    uint8_t mutate(uint8_t mut_prob, uint8_t (*mut_func)(T*)) {
-        if (mut_prob <= random_uint8_t()) {
-            uint8_t res = mut_func(this->dna_seq_);
-            return res;
-        }
-        return 0x02;
-    }
-
-    /**
-     * @brief Randomly decides whether to cross this genome with another
-     *        and, if so, applies the caller-supplied crossover function.
-     * @param other Genome to cross with.
-     * @param cross_prob Probability threshold (0-255) compared against a
-     *                    random draw to decide whether crossover occurs.
-     * @param cross_func Function applied to both DNA sequences to perform
-     *                   the crossover; returns 0 on failure, 1 on success.
-     * @return 0 if other is null or crossover failed, 1 on success, 0x02
-     *         if no crossover was performed.
-     */
-    uint8_t crossover(Genome<T>* other, uint8_t cross_prob, uint8_t (*cross_func)(T*, T*)) {
-        if (other == nullptr) {
-            return 0;
-        }
-
-        if (cross_prob <= random_uint8_t()) {
-            uint8_t res = cross_func(this->dna_seq_, other->dna_seq_);
-            return res;
-        }
-        return 0x02;
-    }
-
 };
+
+/**
+ * @brief Owning pointer to a single individual in a population.
+ * @tparam T Gene type of the genome being owned.
+ */
+template <typename T>
+using IndPtr = std::unique_ptr<Genome<T>>;
+
+/**
+ * @brief An owned population of individuals.
+ * @tparam T Gene type of the genomes in the population.
+ */
+template <typename T>
+using PopulationVec = std::vector<IndPtr<T>>;
