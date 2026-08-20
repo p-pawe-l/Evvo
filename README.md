@@ -1,21 +1,16 @@
-# areo-evo
+# evo-core
 
-Evolution optimizes aerodynamics of jet planes.
-
-The idea is to represent a jet shape as a genome, evolve a population of
-shapes across generations, and score each shape by feeding it through an
-aerodynamics evaluation function (e.g. lift/drag from a panel method or CFD
-run). Over many generations, selection, crossover, and mutation push the
-population toward better-performing shapes.
-
-The genetic-algorithm core is generic (`Genome<T>`, `Evolver<T>`, ...), so
-it isn't tied to jet shapes — see [Example](#example-fitting-a-quadratic)
-below for a minimal, self-contained use of the library on plain numbers.
+A small, generic genetic-algorithm library in C++20. The core
+(`Genome<T>`, `Evolver<T>`, `EvoPolicy<T>`, ...) isn't tied to any
+particular problem domain — it operates on genomes of any gene type `T`,
+with crossover, mutation, and fitness evaluation all supplied by the
+caller. See [Example](#example-fitting-a-quadratic) below for a minimal,
+self-contained use of the library on plain numbers.
 
 ## Architecture
 
-The genetic-algorithm core lives in `include/` and is generic over the gene
-type `T` (e.g. a set of shape control points, or a handful of `double`s).
+The genetic-algorithm core lives in `include/`, generic over the gene
+type `T` (e.g. plain `double`s, or a custom struct of parameters).
 
 - **`genome.hpp` — `Genome<T>`, `IndPtr<T>`, `PopulationVec<T>`**
   `Genome<T>` owns a heap-allocated (`GenomeList<T>` = `std::unique_ptr<T[]>`)
@@ -70,19 +65,41 @@ type `T` (e.g. a set of shape control points, or a handful of `double`s).
 
 - **`generation_stats.hpp` — `GenerationStats<T>`**
   A snapshot of one generation: generation index, population, best/average
-  fitness, and the best genome found that generation.
+  fitness, the best genome found that generation, and every individual's
+  fitness (indexed the same as the population).
 
 - **`callback.hpp` / `evo_callback.hpp` — `Callback<T>` / `EvoCallback<T>`**
   `Callback<T>` is a generic interface invoked with an object of type `T`.
   `EvoCallback<T>` specializes it to `GenerationStats<T>`, so it's invoked
-  once per generation with that generation's stats.
+  once per generation with that generation's stats. It also exposes
+  `should_stop()` (default `false`); if any callback returns `true` after a
+  generation, `Evolver<T>::run()` stops early instead of running the
+  remaining generations.
 
-- **`evo_callbacks.hpp` / `src/*_callback.cpp` — `PrintCallback`, `SaveToFileCallback`**
-  Ready-to-use `EvoCallback<double>` implementations. `PrintCallback` prints
-  a caller-chosen subset of each generation's stats to stdout, selected via
-  the `PrintField` bitmask (`PrintField::Generation | PrintField::BestFitness`,
-  etc.; defaults to `PrintField::All`). `SaveToFileCallback` appends each
-  generation's stats as a CSV row to a file (truncated on construction).
+- **`evo_callbacks.hpp` / `src/*_callback.cpp` — ready-to-use `EvoCallback<double>` implementations**
+  - `PrintCallback` — prints a caller-chosen subset of each generation's
+    stats to stdout, selected via the `PrintField` bitmask
+    (`PrintField::Generation | PrintField::BestFitness`, etc.; defaults to
+    `PrintField::All`).
+  - `SaveToFileCallback` — appends each generation's best/average fitness
+    and the best genome's genes as a CSV row to a file (truncated on
+    construction).
+  - `CheckpointCallback` — periodically overwrites a file with the current
+    best genome, so a long run can resume from the latest checkpoint
+    instead of restarting from scratch.
+  - `ConvergenceCallback` — requests an early stop once `best_fitness` has
+    gone a caller-chosen number of generations without improving by at
+    least `min_delta`.
+  - `FitnessThresholdCallback` — requests an early stop as soon as
+    `best_fitness` reaches a caller-chosen target value.
+  - `DiversityCallback` — tracks population genetic diversity each
+    generation (sum of per-gene variance across the population), useful for
+    spotting premature convergence.
+  - `BestGenomeHistoryCallback` — records a copy of the best genome from
+    every generation, so the full optimization trajectory can be inspected
+    after the run finishes.
+  - `StatsSummaryCallback` — appends each generation's fitness distribution
+    (best, average, min, max, standard deviation) as a CSV row to a file.
 
 - **`evolver.hpp` — `Evolver<T>`**
   Drives the evolution loop. Given crossover/mutation functions, an
@@ -91,12 +108,13 @@ type `T` (e.g. a set of shape control points, or a handful of `double`s).
   `run(runs, eval_func)` fetches the initial population from the policy,
   then repeatedly evaluates the population, reports `GenerationStats<T>`
   to every callback (in order), and asks the policy for the next
-  generation — returning the best genome found across the whole run.
+  generation — returning the best genome found across the whole run (or
+  stopping early if a callback requests it).
 
 ## Example: fitting a quadratic
 
 A minimal use of the library: evolve a 3-gene `Genome<double>` `{a, b, c}`
-until `a*x^2 + b*x + c` fits the target function `5x^2 + 3x + 7`. Fitness is
+until `a*x^2 + b*x + c` fits the target function `5x^2 + 7x + 2`. Fitness is
 `1 / (1 + mean squared error)` over a handful of sample points — always
 positive, which `StdPolicy`'s roulette-wheel selection requires.
 
@@ -111,7 +129,7 @@ positive, which `StdPolicy`'s roulette-wheel selection requires.
 #include "std_policy.hpp"
 
 double target(double x) {
-    return 5.0 * x * x + 3.0 * x + 7.0;
+    return 5.0 * x * x + 7.0 * x + 2.0;
 }
 
 double eval_quadratic_fit(Genome<double>* genome) {
@@ -158,18 +176,35 @@ initialization, build a `PopulationVec<T>` yourself (see
 and pass it to `policy.set_init_population()` instead.
 
 The full runnable version of this example lives in `src/main.cpp` and
-builds as the `areo-evo-demo` target:
+builds as the `evo-core-demo` target:
 
 ```sh
-cmake -S . -B build -DAREO_BUILD_TESTS=OFF
-cmake --build build --target areo-evo-demo
-./build/areo-evo-demo
+cmake -S . -B build -DEVO_CORE_BUILD_TESTS=OFF
+cmake --build build --target evo-core-demo
+./build/evo-core-demo
+```
+
+## Using evo-core from another project
+
+Pull it in with `FetchContent`, pinned to a tag:
+
+```cmake
+include(FetchContent)
+FetchContent_Declare(
+    evo-core
+    GIT_REPOSITORY https://github.com/<you>/evo-core.git
+    GIT_TAG        v0.1.0
+)
+set(EVO_CORE_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(evo-core)
+
+target_link_libraries(your-target PUBLIC evo-core)
 ```
 
 ## Status
 
 Core GA scaffolding (`Genome`, `Evolver`, `EvoPolicy`, `StdPolicy`,
-mutation/crossover functions, callbacks, `GenerationStats`) is in place and
-demonstrated end-to-end by the quadratic-fit example above. Still to come: a
-jet-shape genome representation and the aerodynamics evaluation function
-that connects a genome to a real lift/drag-based fitness score.
+mutation/crossover functions, the full set of callbacks above,
+`GenerationStats`) is in place and demonstrated end-to-end by the
+quadratic-fit example above. No automated tests exist for this core yet —
+that's the next thing to add.

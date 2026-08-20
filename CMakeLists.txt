@@ -1,31 +1,27 @@
 cmake_minimum_required(VERSION 3.16)
-project(areo-evo LANGUAGES CXX)
+project(evo-core LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # --- Library sources ---
-file(GLOB AREO_SOURCES
-    ${CMAKE_SOURCE_DIR}/areo-src/*.cpp
-    ${CMAKE_SOURCE_DIR}/src/*.cpp
-)
-list(REMOVE_ITEM AREO_SOURCES ${CMAKE_SOURCE_DIR}/src/main.cpp)
+file(GLOB EVO_CORE_SOURCES ${CMAKE_SOURCE_DIR}/src/*.cpp)
+list(REMOVE_ITEM EVO_CORE_SOURCES ${CMAKE_SOURCE_DIR}/src/main.cpp)
 
-add_library(areo-evo ${AREO_SOURCES})
-target_include_directories(areo-evo PUBLIC
-    ${CMAKE_SOURCE_DIR}/areo-include
+add_library(evo-core ${EVO_CORE_SOURCES})
+target_include_directories(evo-core PUBLIC
     ${CMAKE_SOURCE_DIR}/include
 )
 
 # --- Demo executable ---
-add_executable(areo-evo-demo ${CMAKE_SOURCE_DIR}/src/main.cpp)
-target_link_libraries(areo-evo-demo PRIVATE areo-evo)
+add_executable(evo-core-demo ${CMAKE_SOURCE_DIR}/src/main.cpp)
+target_link_libraries(evo-core-demo PRIVATE evo-core)
 
 # --- Testing (Catch2) ---
-option(AREO_BUILD_TESTS "Build tests" ON)
+option(EVO_CORE_BUILD_TESTS "Build tests" ON)
 
-if(AREO_BUILD_TESTS)
+if(EVO_CORE_BUILD_TESTS)
     include(FetchContent)
     FetchContent_Declare(
         Catch2
@@ -36,14 +32,14 @@ if(AREO_BUILD_TESTS)
 
     enable_testing()
 
-    file(GLOB AREO_TEST_SOURCES ${CMAKE_SOURCE_DIR}/test/*.cpp)
+    file(GLOB EVO_CORE_TEST_SOURCES ${CMAKE_SOURCE_DIR}/test/*.cpp)
 
-    if(AREO_TEST_SOURCES)
-        add_executable(areo-evo-tests ${AREO_TEST_SOURCES})
-        target_link_libraries(areo-evo-tests PRIVATE areo-evo Catch2::Catch2WithMain)
+    if(EVO_CORE_TEST_SOURCES)
+        add_executable(evo-core-tests ${EVO_CORE_TEST_SOURCES})
+        target_link_libraries(evo-core-tests PRIVATE evo-core Catch2::Catch2WithMain)
 
         include(CTest)
         include(Catch)
-        catch_discover_tests(areo-evo-tests)
+        catch_discover_tests(evo-core-tests)
     endif()
 endif()
