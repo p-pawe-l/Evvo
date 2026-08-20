@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  BUILD_TYPE: Debug
+
+jobs:
+  build:
+    name: Build (${{ matrix.compiler.cc }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler:
+          - { cc: gcc, cxx: g++ }
+          - { cc: clang, cxx: clang++ }
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build ${{ matrix.compiler.cc }}
+
+      - name: Configure
+        env:
+          CC: ${{ matrix.compiler.cc }}
+          CXX: ${{ matrix.compiler.cxx }}
+        run: cmake -S . -B build-${{ matrix.compiler.cc }} -G Ninja -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+
+      - name: Build
+        run: cmake --build build-${{ matrix.compiler.cc }}
+
+      - name: Upload build tree
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.compiler.cc }}
+          path: build-${{ matrix.compiler.cc }}
+          retention-days: 1
+
+  lint-format:
+    name: Lint & format
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tooling
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format clang-tidy cmake ninja-build
+
+      - name: Check formatting
+        run: |
+          find include areo-include src areo-src test \
+            -type f \( -name '*.hpp' -o -name '*.cpp' \) \
+            -print0 | xargs -0 clang-format --dry-run --Werror
+
+      - name: Generate compile_commands.json
+        run: cmake -S . -B build-lint -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+      - name: Run clang-tidy
+        run: |
+          find include areo-include src areo-src \
+            -type f \( -name '*.hpp' -o -name '*.cpp' \) \
+            -print0 | xargs -0 clang-tidy -p build-lint
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    needs: lint-format
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build g++
+
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DAREO_BUILD_TESTS=ON
+
+      - name: Build tests
+        run: cmake --build build --target areo-evo-tests
+
+      - name: Run tests
+        working-directory: build
+        run: ctest --output-on-failure
