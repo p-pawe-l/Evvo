@@ -83,7 +83,7 @@ jobs:
           sudo apt-get install -y cmake ninja-build g++
 
       - name: Configure
-        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DEVO_CORE_BUILD_TESTS=ON
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DEVVO_BUILD_TESTS=ON
 
       - name: Build
         run: cmake --build build

@@ -176,29 +176,29 @@ initialization, build a `PopulationVec<T>` yourself (see
 and pass it to `policy.set_init_population()` instead.
 
 The full runnable version of this example lives in `src/main.cpp` and
-builds as the `evo-core-demo` target:
+builds as the `evvo-demo` target:
 
 ```sh
-cmake -S . -B build -DEVO_CORE_BUILD_TESTS=OFF
-cmake --build build --target evo-core-demo
-./build/evo-core-demo
+cmake -S . -B build -DEVVO_BUILD_TESTS=OFF
+cmake --build build --target evvo-demo
+./build/evvo-demo
 ```
 
-## Using evo-core from another project
+## Using Evvo from another project
 
 Pull it in with `FetchContent`, pinned to a tag:
 
 ```cmake
 include(FetchContent)
 FetchContent_Declare(
-    evo-core
-    GIT_REPOSITORY https://github.com/<you>/evo-core.git
+    Evvo
+    GIT_REPOSITORY https://github.com/p-pawe-l/Evvo.git
     GIT_TAG        v0.1.0
 )
-set(EVO_CORE_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(evo-core)
+set(EVVO_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(evvo)
 
-target_link_libraries(your-target PUBLIC evo-core)
+target_link_libraries(your-target PUBLIC evvo)
 ```
 
 ## Status
