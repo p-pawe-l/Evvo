@@ -10,8 +10,7 @@
  * @brief Generic callback interface invoked with an object of type T.
  * @tparam T Type of the object passed to call.
  */
-template <typename T>
-class Callback {
+template <typename T> class Callback {
 public:
     virtual ~Callback() = default;
 

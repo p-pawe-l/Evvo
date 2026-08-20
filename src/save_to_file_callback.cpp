@@ -8,9 +8,7 @@
 #include <fstream>
 #include <utility>
 
-SaveToFileCallback::SaveToFileCallback(std::string filename):
-filename_{std::move(filename)}
-{
+SaveToFileCallback::SaveToFileCallback(std::string filename) : filename_{std::move(filename)} {
     // Truncate any previous contents so each run starts a fresh file.
     std::ofstream out(this->filename_, std::ios::trunc);
 }

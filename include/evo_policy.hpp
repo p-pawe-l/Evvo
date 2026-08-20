@@ -23,8 +23,7 @@
  *        selection) can reuse it instead of calling eval_func_ again.
  * @tparam T Gene type of the genomes that were evaluated.
  */
-template <typename T>
-struct PopulationEval {
+template <typename T> struct PopulationEval {
     std::vector<double> fitnesses;
     std::size_t best_index;
     double best_fitness;
@@ -36,8 +35,7 @@ struct PopulationEval {
  *        to the next (e.g. selection, crossover, mutation policy).
  * @tparam T Gene type of the genomes being evolved.
  */
-template <typename T>
-class EvoPolicy {
+template <typename T> class EvoPolicy {
 protected:
     std::function<double(Genome<T>*)> eval_func_;
     std::function<IndPtr<T>(const IndPtr<T>&, const IndPtr<T>&)> cross_func_;
@@ -86,8 +84,8 @@ public:
      * @return The initial population, moved out of the policy.
      */
     PopulationVec<T> create_init_population() {
-        assert(this->has_init_population_ &&
-            "EvoPolicy: call set_init_population() or set_random_init() before create_init_population()");
+        assert(this->has_init_population_ && "EvoPolicy: call set_init_population() or "
+                                             "set_random_init() before create_init_population()");
         this->has_init_population_ = false;
         return std::move(this->init_population_);
     }
@@ -96,9 +94,7 @@ public:
      * @brief Sets the fitness function used to score genomes.
      * @param eval_func Fitness function used to score genomes.
      */
-    void set_eval(std::function<double(Genome<T>*)> eval_func) {
-        this->eval_func_ = eval_func;
-    }
+    void set_eval(std::function<double(Genome<T>*)> eval_func) { this->eval_func_ = eval_func; }
 
     /**
      * @brief Sets the crossover function and the probability with which it
@@ -108,7 +104,8 @@ public:
      *                    itself which genes to combine and how.
      * @param crossover_prob Probability threshold (0-255) for crossover.
      */
-    void set_cross_func(std::function<IndPtr<T>(const IndPtr<T>&, const IndPtr<T>&)> cross_func, uint8_t crossover_prob) {
+    void set_cross_func(std::function<IndPtr<T>(const IndPtr<T>&, const IndPtr<T>&)> cross_func,
+                        uint8_t crossover_prob) {
         this->cross_func_ = cross_func;
         this->crossover_prob_ = crossover_prob;
     }
@@ -133,8 +130,8 @@ public:
      *             reused for parent selection instead of re-evaluating.
      * @return The new, owned population for the next generation.
      */
-    virtual PopulationVec<T> create_new_population(
-        const PopulationVec<T>& population, const PopulationEval<T>& eval) = 0;
+    virtual PopulationVec<T> create_new_population(const PopulationVec<T>& population,
+                                                   const PopulationEval<T>& eval) = 0;
 
     /**
      * @brief Evaluates every individual in a population exactly once,

@@ -8,7 +8,8 @@
 // operator*=(const Matrix&) are not really implemented (type mismatches /
 // empty body), so they are intentionally left untested here.
 
-TEST_CASE("Matrix can be constructed from a raw buffer and read back via data()", "[matrix][ctor]") {
+TEST_CASE("Matrix can be constructed from a raw buffer and read back via data()",
+          "[matrix][ctor]") {
     double values[] = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0};
     Matrix<double> m(values, 2, 3);
 
@@ -107,7 +108,8 @@ TEST_CASE("negate flips the sign of every element in place", "[matrix][negate]")
     REQUIRE(m.at(1, 1) == 4.0);
 }
 
-TEST_CASE("get_negated returns a negated copy and leaves the original unchanged", "[matrix][negate]") {
+TEST_CASE("get_negated returns a negated copy and leaves the original unchanged",
+          "[matrix][negate]") {
     double values[] = {1.0, -2.0, 3.0, -4.0};
     Matrix<double> m(values, 2, 2);
 
@@ -214,7 +216,8 @@ TEST_CASE("transpose does not actually reorder the underlying elements", "[matri
     REQUIRE(span[3] == 4.0);
 }
 
-TEST_CASE("get_transposed swaps dimensions on the returned copy and leaves the original unchanged", "[matrix][transpose]") {
+TEST_CASE("get_transposed swaps dimensions on the returned copy and leaves the original unchanged",
+          "[matrix][transpose]") {
     double values[] = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0};
     Matrix<double> m(values, 2, 3);
 

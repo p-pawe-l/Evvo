@@ -2,7 +2,6 @@
 #include <cmath>
 #include <initializer_list>
 
-
 Vector3D::Vector3D(double x, double y, double z) {
     vec_data_[0] = x;
     vec_data_[1] = y;
@@ -23,8 +22,7 @@ Vector3D::Vector3D(std::vector<double> init_list) {
 }
 
 double Vector3D::dot_product(const Vector3D& other) const noexcept {
-    return vec_data_[0] * other.vec_data_[0] +
-           vec_data_[1] * other.vec_data_[1] +
+    return vec_data_[0] * other.vec_data_[0] + vec_data_[1] * other.vec_data_[1] +
            vec_data_[2] * other.vec_data_[2];
 }
 
@@ -33,11 +31,9 @@ double Vector3D::dot_product(Vector3D&& other) const noexcept {
 }
 
 Vector3D Vector3D::cross_product(const Vector3D& other) const noexcept {
-    return Vector3D(
-        vec_data_[1] * other.vec_data_[2] - vec_data_[2] * other.vec_data_[1],
-        vec_data_[2] * other.vec_data_[0] - vec_data_[0] * other.vec_data_[2],
-        vec_data_[0] * other.vec_data_[1] - vec_data_[1] * other.vec_data_[0]
-    );
+    return Vector3D(vec_data_[1] * other.vec_data_[2] - vec_data_[2] * other.vec_data_[1],
+                    vec_data_[2] * other.vec_data_[0] - vec_data_[0] * other.vec_data_[2],
+                    vec_data_[0] * other.vec_data_[1] - vec_data_[1] * other.vec_data_[0]);
 }
 
 Vector3D Vector3D::cross_product(Vector3D&& other) const noexcept {
@@ -66,9 +62,8 @@ Vector3D Vector3D::get_normalized() const noexcept {
 }
 
 double Vector3D::get_size() const noexcept {
-    return std::sqrt(vec_data_[0] * vec_data_[0] +
-                      vec_data_[1] * vec_data_[1] +
-                      vec_data_[2] * vec_data_[2]);
+    return std::sqrt(vec_data_[0] * vec_data_[0] + vec_data_[1] * vec_data_[1] +
+                     vec_data_[2] * vec_data_[2]);
 }
 
 double Vector3D::get_x() const noexcept {
@@ -82,4 +77,3 @@ double Vector3D::get_y() const noexcept {
 double Vector3D::get_z() const noexcept {
     return vec_data_[2];
 }
-

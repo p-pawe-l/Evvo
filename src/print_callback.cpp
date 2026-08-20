@@ -7,9 +7,7 @@
 
 #include <iostream>
 
-PrintCallback::PrintCallback(PrintField fields):
-fields_{fields}
-{}
+PrintCallback::PrintCallback(PrintField fields) : fields_{fields} {}
 
 void PrintCallback::call(const GenerationStats<double>& stats) {
     bool first = true;

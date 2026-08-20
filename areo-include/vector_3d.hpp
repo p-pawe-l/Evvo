@@ -117,5 +117,4 @@ public:
      * @return The z component.
      */
     [[nodiscard]] double get_z() const noexcept;
-
 };

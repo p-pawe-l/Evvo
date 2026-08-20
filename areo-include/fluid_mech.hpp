@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <initializer_list>
+#include <cmath>
 
 constexpr double g_acc = 9.81;
 using DoubleFn = std::function<double(std::vector<double>)>;
@@ -18,16 +19,10 @@ using DoubleFn = std::function<double(std::vector<double>)>;
  * @return Approximate value of d(func)/d(params[wrt_index]) at the given point.
  */
 template <typename... Params>
-double calc_derivative(DoubleFn func, std::size_t wrt_index, Params... params, double dx=0.0001)
-{   
+double calc_derivative(DoubleFn func, std::size_t wrt_index, Params... params, double dx = 0.0001) {
     std::vector<double> forward{static_cast<double>(params)...};
     std::vector<double> backward = forward;
 
     forward[wrt_index] += dx;
     return (func(forward) - func(backward)) / dx;
 }
-
-
-
-
-

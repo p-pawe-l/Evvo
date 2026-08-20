@@ -22,10 +22,8 @@ public:
      * @param rhs_rows Row count of the right-hand matrix.
      * @param rhs_cols Column count of the right-hand matrix.
      */
-    InvalidDimsException(
-        std::size_t lhs_rows, std::size_t lhs_cols,
-        std::size_t rhs_rows, std::size_t rhs_cols
-    );
+    InvalidDimsException(std::size_t lhs_rows, std::size_t lhs_cols, std::size_t rhs_rows,
+                         std::size_t rhs_cols);
 
     /**
      * @brief Returns a message describing the dimension mismatch.
@@ -50,10 +48,7 @@ public:
      * @param rows Row count of the matrix.
      * @param cols Column count of the matrix.
      */
-    InvalidIndexException(
-        std::size_t row, std::size_t col,
-        std::size_t rows, std::size_t cols
-    );
+    InvalidIndexException(std::size_t row, std::size_t col, std::size_t rows, std::size_t cols);
 
     /**
      * @brief Returns a message describing the out-of-bounds index.

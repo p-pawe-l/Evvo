@@ -25,8 +25,7 @@
  *        run() is called).
  * @tparam T Gene type of the genomes being evolved.
  */
-template <typename T>
-class Evolver {
+template <typename T> class Evolver {
 private:
     std::vector<EvoCallback<T>*> callbacks_;
     EvoPolicy<T>* policy_;
@@ -52,13 +51,9 @@ public:
      */
     Evolver(std::function<IndPtr<T>(const IndPtr<T>&, const IndPtr<T>&)> cross_func,
             std::function<IndPtr<T>(const IndPtr<T>&)> mut_func,
-            std::vector<EvoCallback<T>*> callbacks,
-            EvoPolicy<T>* policy,
-            uint8_t mutation_prob,
-            uint8_t crossover_prob):
-    callbacks_{std::move(callbacks)},
-    policy_{policy}
-    {
+            std::vector<EvoCallback<T>*> callbacks, EvoPolicy<T>* policy, uint8_t mutation_prob,
+            uint8_t crossover_prob)
+        : callbacks_{std::move(callbacks)}, policy_{policy} {
         this->policy_->set_cross_func(cross_func, crossover_prob);
         this->policy_->set_mut_func(mut_func, mutation_prob);
     }
@@ -75,7 +70,7 @@ public:
      * @return The best genome found during evolution.
      */
     Genome<T> run(int runs, std::function<double(Genome<T>*)> eval_func) {
-        this->policy_->set_eval(eval_func); 
+        this->policy_->set_eval(eval_func);
 
         PopulationVec<T> new_pop = this->policy_->create_init_population();
         int generation = 0;
@@ -83,7 +78,7 @@ public:
         std::unique_ptr<Genome<T>> best_genome = nullptr;
         double best_fitness = 0.0;
 
-        while(runs > 0) {
+        while (runs > 0) {
             if (new_pop.empty()) {
                 break;
             }
@@ -96,13 +91,8 @@ public:
                 best_fitness = eval.best_fitness;
             }
 
-            GenerationStats<T> stats{
-                generation,
-                new_pop,
-                eval.best_fitness,
-                eval.total_fitness / new_pop.size(),
-                best
-            };
+            GenerationStats<T> stats{generation, new_pop, eval.best_fitness,
+                                     eval.total_fitness / new_pop.size(), best};
             for (EvoCallback<T>* callback : this->callbacks_) {
                 callback->call(stats);
             }
@@ -112,10 +102,6 @@ public:
             runs--;
         }
 
-
         return *best_genome;
     }
-
-
-
 };

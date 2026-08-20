@@ -12,8 +12,7 @@
  * @brief Snapshot of a single generation's evolution results.
  * @tparam T Gene type of the genomes being evolved.
  */
-template <typename T>
-struct GenerationStats {
+template <typename T> struct GenerationStats {
     int generation;
     const PopulationVec<T>& population;
     double best_fitness;

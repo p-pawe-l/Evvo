@@ -19,28 +19,26 @@
  *        PrintField::Generation | PrintField::BestFitness).
  */
 enum class PrintField : uint8_t {
-    None        = 0,
-    Generation  = 1u << 0,
+    None = 0,
+    Generation = 1u << 0,
     BestFitness = 1u << 1,
-    AvgFitness  = 1u << 2,
-    Genome      = 1u << 3,
-    All         = Generation | BestFitness | AvgFitness | Genome,
+    AvgFitness = 1u << 2,
+    Genome = 1u << 3,
+    All = Generation | BestFitness | AvgFitness | Genome,
 };
 
 /**
  * @brief Combines two PrintField flags into one bitmask.
  */
 constexpr PrintField operator|(PrintField lhs, PrintField rhs) {
-    return static_cast<PrintField>(
-        static_cast<uint8_t>(lhs) | static_cast<uint8_t>(rhs));
+    return static_cast<PrintField>(static_cast<uint8_t>(lhs) | static_cast<uint8_t>(rhs));
 }
 
 /**
  * @brief Intersects two PrintField flags.
  */
 constexpr PrintField operator&(PrintField lhs, PrintField rhs) {
-    return static_cast<PrintField>(
-        static_cast<uint8_t>(lhs) & static_cast<uint8_t>(rhs));
+    return static_cast<PrintField>(static_cast<uint8_t>(lhs) & static_cast<uint8_t>(rhs));
 }
 
 /**
@@ -87,4 +85,3 @@ public:
 
     void call(const GenerationStats<double>& stats) override;
 };
-

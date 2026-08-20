@@ -17,15 +17,13 @@
  * @brief Owning pointer to a heap-allocated array of genes of type T.
  * @tparam T Gene type stored in the array.
  */
-template <typename T>
-using GenomeList = std::unique_ptr<T[]>;
+template <typename T> using GenomeList = std::unique_ptr<T[]>;
 
 /**
  * @brief Owns a heap-allocated sequence of genes of type T.
  * @tparam T Gene type stored in the DNA sequence.
  */
-template <typename T>
-class Genome {
+template <typename T> class Genome {
 private:
     GenomeList<T> dna_seq_;
     std::size_t len_;
@@ -35,34 +33,26 @@ public:
      * @brief Accesses the raw DNA sequence.
      * @return Pointer to the first gene in the sequence.
      */
-    T* data() {
-        return this->dna_seq_.get();
-    }
+    T* data() { return this->dna_seq_.get(); }
 
     /**
      * @brief Accesses the raw DNA sequence.
      * @return Pointer to the first gene in the sequence.
      */
-    const T* data() const {
-        return this->dna_seq_.get();
-    }
+    const T* data() const { return this->dna_seq_.get(); }
 
     /**
      * @brief Number of genes in the DNA sequence.
      * @return Length of the DNA sequence.
      */
-    std::size_t size() const noexcept {
-        return this->len_;
-    }
+    std::size_t size() const noexcept { return this->len_; }
 
     /**
      * @brief Constructs a Genome from an initializer list of genes.
      * @param seq Genes to move into the newly allocated DNA sequence.
      */
-    Genome(std::initializer_list<T> seq):
-    dna_seq_{std::make_unique<T[]>(seq.size())},
-    len_{static_cast<std::size_t>(seq.size())}
-    {
+    Genome(std::initializer_list<T> seq)
+        : dna_seq_{std::make_unique<T[]>(seq.size())}, len_{static_cast<std::size_t>(seq.size())} {
         for (int i = 0; i < this->len_; ++i) {
             this->dna_seq_[i] = std::move(seq.begin()[i]);
         }
@@ -76,10 +66,7 @@ public:
      * @param gene_gen Invoked once per gene to produce its value.
      */
     template <typename Generator>
-    Genome(std::size_t len, Generator gene_gen):
-    dna_seq_{std::make_unique<T[]>(len)},
-    len_{len}
-    {
+    Genome(std::size_t len, Generator gene_gen) : dna_seq_{std::make_unique<T[]>(len)}, len_{len} {
         for (std::size_t i = 0; i < this->len_; ++i) {
             this->dna_seq_[i] = gene_gen();
         }
@@ -89,10 +76,7 @@ public:
      * @brief Move-constructs a Genome, stealing other's DNA sequence.
      * @param other Genome to move from; left empty (nullptr, len 0).
      */
-    Genome(Genome&& other) noexcept:
-    dna_seq_{std::move(other.dna_seq_)},
-    len_{other.len_}
-    {
+    Genome(Genome&& other) noexcept : dna_seq_{std::move(other.dna_seq_)}, len_{other.len_} {
         other.len_ = 0;
     }
 
@@ -116,10 +100,7 @@ public:
      * @brief Copy-constructs a Genome, deep-copying other's DNA sequence.
      * @param other Genome to copy from.
      */
-    Genome(const Genome& other):
-    dna_seq_{std::make_unique<T[]>(other.len_)},
-    len_{other.len_}
-    {
+    Genome(const Genome& other) : dna_seq_{std::make_unique<T[]>(other.len_)}, len_{other.len_} {
         for (std::size_t i = 0; i < this->len_; ++i) {
             this->dna_seq_[i] = other.dna_seq_[i];
         }
@@ -148,19 +129,16 @@ public:
      * @brief Releases the DNA sequence's heap allocation, if any.
      */
     ~Genome() = default;
-
 };
 
 /**
  * @brief Owning pointer to a single individual in a population.
  * @tparam T Gene type of the genome being owned.
  */
-template <typename T>
-using IndPtr = std::unique_ptr<Genome<T>>;
+template <typename T> using IndPtr = std::unique_ptr<Genome<T>>;
 
 /**
  * @brief An owned population of individuals.
  * @tparam T Gene type of the genomes in the population.
  */
-template <typename T>
-using PopulationVec = std::vector<IndPtr<T>>;
+template <typename T> using PopulationVec = std::vector<IndPtr<T>>;

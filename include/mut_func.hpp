@@ -22,8 +22,7 @@
  * @param individual Parent individual to mutate.
  * @return A newly allocated offspring with the mutation applied.
  */
-template <typename T>
-IndPtr<T> mutate_gaussian(const IndPtr<T>& individual) {
+template <typename T> IndPtr<T> mutate_gaussian(const IndPtr<T>& individual) {
     static std::random_device rd;
     static std::mt19937 gen(rd());
     static std::normal_distribution<double> noise(0.0, 0.1);
@@ -43,8 +42,7 @@ IndPtr<T> mutate_gaussian(const IndPtr<T>& individual) {
  * @return A newly allocated offspring with the mutation applied; an
  *         unchanged copy of individual if it has no genes.
  */
-template <typename T>
-IndPtr<T> mutate_random_reset(const IndPtr<T>& individual) {
+template <typename T> IndPtr<T> mutate_random_reset(const IndPtr<T>& individual) {
     auto offspring = std::make_unique<Genome<T>>(*individual);
     if (offspring->size() == 0) {
         return offspring;
@@ -61,8 +59,7 @@ IndPtr<T> mutate_random_reset(const IndPtr<T>& individual) {
  * @param individual Parent individual to mutate.
  * @return A newly allocated offspring with the mutation applied.
  */
-template <typename T>
-IndPtr<T> mutate_boundary(const IndPtr<T>& individual) {
+template <typename T> IndPtr<T> mutate_boundary(const IndPtr<T>& individual) {
     auto offspring = std::make_unique<Genome<T>>(*individual);
     for (int i = 0; i < offspring->size(); ++i) {
         offspring->data()[i] = static_cast<T>((random_double(0.0, 1.0) < 0.5) ? -1.0 : 1.0);

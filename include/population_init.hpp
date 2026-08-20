@@ -22,9 +22,8 @@
  * @return The newly built population.
  */
 template <typename T, typename Generator>
-PopulationVec<T> make_random_population(
-    std::size_t population_size, std::size_t genome_len, Generator gene_gen
-) {
+PopulationVec<T> make_random_population(std::size_t population_size, std::size_t genome_len,
+                                        Generator gene_gen) {
     PopulationVec<T> population;
     population.reserve(population_size);
     for (std::size_t i = 0; i < population_size; ++i) {

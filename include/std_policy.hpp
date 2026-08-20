@@ -32,8 +32,8 @@ private:
      *         in population; remain valid only as long as population is
      *         alive.
      */
-    std::pair<const IndPtr<double>*, const IndPtr<double>*> choose_parents(
-        const PopulationVec<double>& population, const PopulationEval<double>& eval);
+    std::pair<const IndPtr<double>*, const IndPtr<double>*>
+    choose_parents(const PopulationVec<double>& population, const PopulationEval<double>& eval);
 
     /**
      * @brief Picks a single individual via roulette wheel selection,
@@ -64,8 +64,8 @@ public:
      *             parent selection instead of re-evaluating.
      * @return The new, owned population for the next generation.
      */
-    PopulationVec<double> create_new_population(
-        const PopulationVec<double>& prev, const PopulationEval<double>& eval) override;
+    PopulationVec<double> create_new_population(const PopulationVec<double>& prev,
+                                                const PopulationEval<double>& eval) override;
 
     /**
      * @brief Evaluates every individual in the population exactly once
