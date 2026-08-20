@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <vector>
 
 #include "genome.hpp"
 #include "evo_policy.hpp"
@@ -18,64 +19,52 @@
 /**
  * @brief Runs a genetic-algorithm evolution loop over a population of
  *        Genome<T>, using caller-supplied crossover/mutation functions
- *        and an EvoPolicy<T> to produce successive generations.
+ *        and an EvoPolicy<T> to produce successive generations. The
+ *        initial population is owned by the policy (configured via
+ *        EvoPolicy<T>::set_init_population() or set_random_init() before
+ *        run() is called).
  * @tparam T Gene type of the genomes being evolved.
  */
 template <typename T>
 class Evolver {
 private:
-    PopulationVec<T> init_population_;
-    uint8_t mutation_prob_;
-    uint8_t crossover_prob_;
-    std::function<IndPtr<T>(const IndPtr<T>&, const IndPtr<T>&)> cross_func_;
-    std::function<IndPtr<T>(const IndPtr<T>&)> mut_func_;
-
-    EvoCallback<T>* callback_;
-
-    std::unique_ptr<Genome<T>> best_genome_;
-    double best_fitness_;
+    std::vector<EvoCallback<T>*> callbacks_;
     EvoPolicy<T>* policy_;
-
 
 public:
     /**
-     * @brief Constructs an Evolver with an initial population and the
-     *        crossover/mutation functions and probabilities to use.
-     * @param init_population Starting population of genomes; ownership is
-     *                         transferred into the Evolver.
+     * @brief Constructs an Evolver with the crossover/mutation functions
+     *        and probabilities to use.
      * @param cross_func Function applied to two parent individuals to
      *                   produce a new offspring individual; decides
      *                   itself which genes to combine and how.
      * @param mut_func Function applied to a parent individual to produce
      *                 a new, mutated offspring individual; decides itself
      *                 which genes to change and how.
-     * @param callback Callback invoked once per generation with that
-     *                 generation's GenerationStats<T>.
-     * @param policy Policy used to select, score, and evolve populations.
+     * @param callbacks Callbacks invoked, in order, once per generation
+     *                  with that generation's GenerationStats<T>.
+     * @param policy Policy used to build the initial population, and to
+     *               select, score, and evolve populations thereafter;
+     *               must have set_init_population()/set_random_init()
+     *               called on it before run().
      * @param mutation_prob Probability threshold (0-255) for mutation.
      * @param crossover_prob Probability threshold (0-255) for crossover.
      */
-    Evolver(PopulationVec<T> init_population,
-            std::function<IndPtr<T>(const IndPtr<T>&, const IndPtr<T>&)> cross_func,
+    Evolver(std::function<IndPtr<T>(const IndPtr<T>&, const IndPtr<T>&)> cross_func,
             std::function<IndPtr<T>(const IndPtr<T>&)> mut_func,
-            EvoCallback<T>* callback,
+            std::vector<EvoCallback<T>*> callbacks,
             EvoPolicy<T>* policy,
             uint8_t mutation_prob,
             uint8_t crossover_prob):
-    init_population_{std::move(init_population)},
-    mutation_prob_{mutation_prob},
-    crossover_prob_{crossover_prob},
-    cross_func_{cross_func},
-    mut_func_{mut_func},
-    callback_{callback},
-    best_genome_{nullptr},
-    best_fitness_{0.0},
+    callbacks_{std::move(callbacks)},
     policy_{policy}
-    {}
+    {
+        this->policy_->set_cross_func(cross_func, crossover_prob);
+        this->policy_->set_mut_func(mut_func, mutation_prob);
+    }
 
     /**
-     * @brief Destroys the Evolver, freeing the population and best genome
-     *        it owns.
+     * @brief Destroys the Evolver.
      */
     ~Evolver() = default;
 
@@ -86,12 +75,13 @@ public:
      * @return The best genome found during evolution.
      */
     Genome<T> run(int runs, std::function<double(Genome<T>*)> eval_func) {
-        this->policy_->set_eval(eval_func);
-        this->policy_->set_cross_func(cross_func_, crossover_prob_);
-        this->policy_->set_mut_func(mut_func_, mutation_prob_);
+        this->policy_->set_eval(eval_func); 
 
-        PopulationVec<T> new_pop = std::move(this->init_population_);
+        PopulationVec<T> new_pop = this->policy_->create_init_population();
         int generation = 0;
+
+        std::unique_ptr<Genome<T>> best_genome = nullptr;
+        double best_fitness = 0.0;
 
         while(runs > 0) {
             if (new_pop.empty()) {
@@ -101,9 +91,9 @@ public:
             PopulationEval<T> eval = this->policy_->evaluate(new_pop);
             Genome<T>* best = new_pop[eval.best_index].get();
 
-            if (this->best_genome_ == nullptr || eval.best_fitness > this->best_fitness_) {
-                this->best_genome_ = std::make_unique<Genome<T>>(*best);
-                this->best_fitness_ = eval.best_fitness;
+            if (best_genome == nullptr || eval.best_fitness > best_fitness) {
+                best_genome = std::make_unique<Genome<T>>(*best);
+                best_fitness = eval.best_fitness;
             }
 
             GenerationStats<T> stats{
@@ -113,7 +103,9 @@ public:
                 eval.total_fitness / new_pop.size(),
                 best
             };
-            this->callback_->call(stats);
+            for (EvoCallback<T>* callback : this->callbacks_) {
+                callback->call(stats);
+            }
 
             new_pop = this->policy_->create_new_population(new_pop, eval);
             ++generation;
@@ -121,7 +113,7 @@ public:
         }
 
 
-        return *(this->best_genome_);
+        return *best_genome;
     }
 
 
