@@ -1,4 +1,4 @@
-# evo-core
+# Evvo
 
 A small, generic genetic-algorithm library in C++20. The core
 (`Genome<T>`, `Evolver<T>`, `EvoPolicy<T>`, ...) isn't tied to any
