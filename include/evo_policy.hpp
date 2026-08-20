@@ -6,9 +6,27 @@
 
 #pragma once
 
+#include <cstddef>
 #include <functional>
+#include <vector>
 
 #include "genome.hpp"
+
+/**
+ * @brief Result of a single pass over a population evaluating every
+ *        individual's fitness exactly once. Stores each individual's
+ *        fitness (indexed the same as the population it was computed
+ *        from) alongside the aggregates, so later steps (e.g. parent
+ *        selection) can reuse it instead of calling eval_func_ again.
+ * @tparam T Gene type of the genomes that were evaluated.
+ */
+template <typename T>
+struct PopulationEval {
+    std::vector<double> fitnesses;
+    std::size_t best_index;
+    double best_fitness;
+    double total_fitness;
+};
 
 /**
  * @brief Strategy interface for evolving a population from one generation
@@ -64,23 +82,20 @@ public:
     /**
      * @brief Produces the next generation from the current population.
      * @param population Current generation of genomes.
+     * @param eval Fitnesses of population, as computed by evaluate();
+     *             reused for parent selection instead of re-evaluating.
      * @return The new, owned population for the next generation.
      */
     virtual PopulationVec<T> create_new_population(
-        const PopulationVec<T>& population) = 0;
+        const PopulationVec<T>& population, const PopulationEval<T>& eval) = 0;
 
     /**
-     * @brief Selects the fittest genome in a population.
-     * @param population Population to select from.
-     * @return Non-owning pointer to the genome with the highest fitness;
-     *         remains valid only as long as population is alive.
+     * @brief Evaluates every individual in a population exactly once,
+     *        collecting every individual's fitness, the fittest
+     *        individual's index/fitness, and the population's total
+     *        fitness in a single pass.
+     * @param population Population to evaluate; must be non-empty.
+     * @return The per-individual fitnesses and aggregates found.
      */
-    virtual Genome<T>* choose_best(const PopulationVec<T>& population) = 0;
-
-    /**
-     * @brief Sums fitness over a population.
-     * @param population Population to sum fitness over.
-     * @return The total fitness of the population.
-     */
-    virtual double get_total_fitness(const PopulationVec<T>& population) = 0;
+    virtual PopulationEval<T> evaluate(const PopulationVec<T>& population) = 0;
 };

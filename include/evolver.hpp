@@ -33,6 +33,7 @@ private:
     EvoCallback<T>* callback_;
 
     std::unique_ptr<Genome<T>> best_genome_;
+    double best_fitness_;
     EvoPolicy<T>* policy_;
 
 
@@ -68,6 +69,7 @@ public:
     mut_func_{mut_func},
     callback_{callback},
     best_genome_{nullptr},
+    best_fitness_{0.0},
     policy_{policy}
     {}
 
@@ -92,24 +94,28 @@ public:
         int generation = 0;
 
         while(runs > 0) {
-            double total_fitness = this->policy_->get_total_fitness(new_pop);
+            if (new_pop.empty()) {
+                break;
+            }
 
-            Genome<T>* best = this->policy_->choose_best(new_pop);
-            double best_fitness = eval_func(best);
-            if (this->best_genome_ == nullptr || best_fitness > eval_func(this->best_genome_.get())) {
+            PopulationEval<T> eval = this->policy_->evaluate(new_pop);
+            Genome<T>* best = new_pop[eval.best_index].get();
+
+            if (this->best_genome_ == nullptr || eval.best_fitness > this->best_fitness_) {
                 this->best_genome_ = std::make_unique<Genome<T>>(*best);
+                this->best_fitness_ = eval.best_fitness;
             }
 
             GenerationStats<T> stats{
                 generation,
                 new_pop,
-                best_fitness,
-                new_pop.empty() ? 0.0 : total_fitness / new_pop.size(),
+                eval.best_fitness,
+                eval.total_fitness / new_pop.size(),
                 best
             };
             this->callback_->call(stats);
 
-            new_pop = this->policy_->create_new_population(new_pop);
+            new_pop = this->policy_->create_new_population(new_pop, eval);
             ++generation;
             runs--;
         }
