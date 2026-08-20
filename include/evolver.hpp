@@ -91,10 +91,16 @@ public:
                 best_fitness = eval.best_fitness;
             }
 
-            GenerationStats<T> stats{generation, new_pop, eval.best_fitness,
-                                     eval.total_fitness / new_pop.size(), best};
+            GenerationStats<T> stats{
+                generation, new_pop,       eval.best_fitness, eval.total_fitness / new_pop.size(),
+                best,       eval.fitnesses};
+            bool stop = false;
             for (EvoCallback<T>* callback : this->callbacks_) {
                 callback->call(stats);
+                stop = stop || callback->should_stop();
+            }
+            if (stop) {
+                break;
             }
 
             new_pop = this->policy_->create_new_population(new_pop, eval);

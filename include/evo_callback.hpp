@@ -18,4 +18,12 @@ public:
     void call(const GenerationStats<T>& stats) override {
         // TODO: react to generation stats (logging, checkpointing, etc.)
     }
+
+    /**
+     * @brief Polled by Evolver<T>::run() right after call(); if any
+     *        callback returns true, the run stops before producing the
+     *        next generation. Defaults to false (never stop).
+     * @return true to request the evolution loop stop.
+     */
+    [[nodiscard]] virtual bool should_stop() const { return false; }
 };
