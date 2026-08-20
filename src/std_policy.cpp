@@ -4,6 +4,8 @@
  *        used to drive standard genetic-algorithm runs over double genomes.
  */
 
+#include <random>
+
 #include "../include/evo_policy.hpp"
 #include "genome.hpp"
 
@@ -18,14 +20,28 @@ private:
     /**
      * @brief Selects two parent individuals from a population to breed.
      * @param population Population to select parents from.
-     * @return Non-owning pointers to the two chosen parents; remain valid
-     *         only as long as population is alive.
+     * @return Non-owning pointers to the two chosen parents' IndPtr slots
+     *         in population; remain valid only as long as population is
+     *         alive.
      */
-    std::pair<Genome<double>*, Genome<double>*> choose_parents(
+    std::pair<const IndPtr<double>*, const IndPtr<double>*> choose_parents(
         const PopulationVec<double>& population
     )
     {
         return {nullptr, nullptr};
+    }
+
+    /**
+     * @brief Rolls whether an event with the given probability threshold
+     *        occurs.
+     * @param prob Probability threshold (0-255); higher means more likely.
+     * @return true if the event should occur.
+     */
+    static bool roll(uint8_t prob) {
+        static std::random_device rd;
+        static std::mt19937 gen(rd());
+        static std::uniform_int_distribution<int> dist(0, 255);
+        return dist(gen) < prob;
     }
 
 public:
@@ -45,9 +61,15 @@ public:
         new_pop.reserve(prev.size());
         while (new_pop.size() != prev.size()) {
             auto parents = choose_parents(prev);
-            auto offspring = std::make_unique<Genome<double>>(*parents.first);
-            offspring->crossover(parents.second, crossover_prob_, cross_func_);
-            offspring->mutate(mutation_prob_, mut_func_);
+
+            IndPtr<double> offspring = roll(crossover_prob_)
+                ? cross_func_(*parents.first, *parents.second)
+                : std::make_unique<Genome<double>>(**parents.first);
+
+            if (roll(mutation_prob_)) {
+                offspring = mut_func_(offspring);
+            }
+
             new_pop.push_back(std::move(offspring));
         }
         return new_pop;
