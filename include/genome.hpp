@@ -28,7 +28,7 @@ template <typename T>
 class Genome {
 private:
     GenomeList<T> dna_seq_;
-    int len_;
+    std::size_t len_;
 
 public:
     /**
@@ -51,7 +51,7 @@ public:
      * @brief Number of genes in the DNA sequence.
      * @return Length of the DNA sequence.
      */
-    int size() const {
+    std::size_t size() const noexcept {
         return this->len_;
     }
 
@@ -61,7 +61,7 @@ public:
      */
     Genome(std::initializer_list<T> seq):
     dna_seq_{std::make_unique<T[]>(seq.size())},
-    len_{static_cast<int>(seq.size())}
+    len_{static_cast<std::size_t>(seq.size())}
     {
         for (int i = 0; i < this->len_; ++i) {
             this->dna_seq_[i] = std::move(seq.begin()[i]);
@@ -103,7 +103,7 @@ public:
     dna_seq_{std::make_unique<T[]>(other.len_)},
     len_{other.len_}
     {
-        for (int i = 0; i < this->len_; ++i) {
+        for (std::size_t i = 0; i < this->len_; ++i) {
             this->dna_seq_[i] = other.dna_seq_[i];
         }
     }
