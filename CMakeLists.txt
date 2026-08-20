@@ -6,22 +6,16 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # --- Library sources ---
-file(GLOB AREO_SOURCES ${CMAKE_SOURCE_DIR}/areo-src/*.cpp)
+file(GLOB AREO_SOURCES
+    ${CMAKE_SOURCE_DIR}/areo-src/*.cpp
+    ${CMAKE_SOURCE_DIR}/src/*.cpp
+)
 
 add_library(areo-evo ${AREO_SOURCES})
 target_include_directories(areo-evo PUBLIC
     ${CMAKE_SOURCE_DIR}/areo-include
     ${CMAKE_SOURCE_DIR}/include
 )
-
-# --- Demo executable ---
-add_executable(areo-evo-demo
-    ${CMAKE_SOURCE_DIR}/src/main.cpp
-    ${CMAKE_SOURCE_DIR}/src/std_policy.cpp
-    ${CMAKE_SOURCE_DIR}/src/print_callback.cpp
-    ${CMAKE_SOURCE_DIR}/src/save_to_file_callback.cpp
-)
-target_link_libraries(areo-evo-demo PRIVATE areo-evo)
 
 # --- Testing (Catch2) ---
 option(AREO_BUILD_TESTS "Build tests" ON)

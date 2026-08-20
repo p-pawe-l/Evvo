@@ -36,12 +36,25 @@ type `T` (e.g. a set of shape control points, or a handful of `double`s).
   that return a new offspring combining both parents. Includes
   `crossover_single_point`, `crossover_uniform`, `crossover_arithmetic`.
 
+- **`population_init.hpp` — `make_random_population<T>()`**
+  Builds a `PopulationVec<T>` of `population_size` genomes, each with
+  `genome_len` genes, produced by calling a caller-supplied generator once
+  per gene. `EvoPolicy<T>::set_random_init()` uses this internally, so in
+  the common case you never need to call it directly.
+
 - **`evo_policy.hpp` — `EvoPolicy<T>`, `PopulationEval<T>`**
   Abstract strategy interface for evolving a population: selection,
   crossover, and mutation are all applied by the policy implementation.
-  Holds the fitness function (`set_eval()`) plus the crossover/mutation
+  Holds the fitness function (`set_eval()`), the crossover/mutation
   functions and probabilities (`set_cross_func()`, `set_mut_func()`), and
-  exposes:
+  the initial population, and exposes:
+  - `set_init_population(population)` / `set_random_init(population_size,
+    genome_len, lo, hi)` — configure the population `create_init_population()`
+    will hand back; the latter draws each gene uniformly from `[lo, hi]`,
+    picking an integer or real distribution based on `T` (see
+    `random_value` in `rand_util.hpp`).
+  - `create_init_population()` — hands back the population configured
+    above; `Evolver<T>::run()` calls this once at the start of a run.
   - `evaluate(population)` — scores every individual exactly once, returning
     a `PopulationEval<T>` with each individual's fitness, the fittest
     individual's index/fitness, and the population's total fitness, so
@@ -72,11 +85,13 @@ type `T` (e.g. a set of shape control points, or a handful of `double`s).
   generation's stats as a CSV row to a file (truncated on construction).
 
 - **`evolver.hpp` — `Evolver<T>`**
-  Drives the evolution loop. Given an initial population, crossover/mutation
-  functions, an `EvoPolicy<T>`, and an `EvoCallback<T>`, `run(runs, eval_func)`
-  repeatedly evaluates the population, reports `GenerationStats<T>` to the
-  callback, and asks the policy for the next generation — returning the best
-  genome found across the whole run.
+  Drives the evolution loop. Given crossover/mutation functions, an
+  `EvoPolicy<T>` (already configured with `set_init_population()` or
+  `set_random_init()`), and a `std::vector<EvoCallback<T>*>`,
+  `run(runs, eval_func)` fetches the initial population from the policy,
+  then repeatedly evaluates the population, reports `GenerationStats<T>`
+  to every callback (in order), and asks the policy for the next
+  generation — returning the best genome found across the whole run.
 
 ## Example: fitting a quadratic
 
@@ -87,7 +102,6 @@ positive, which `StdPolicy`'s roulette-wheel selection requires.
 
 ```cpp
 #include <cstdio>
-#include <random>
 
 #include "cross_func.hpp"
 #include "evo_callbacks.hpp"
@@ -113,29 +127,17 @@ double eval_quadratic_fit(Genome<double>* genome) {
     return 1.0 / (1.0 + squared_error / 7.0);
 }
 
-PopulationVec<double> make_init_population(std::size_t size) {
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_real_distribution<double> dist(-10.0, 10.0);
-
-    PopulationVec<double> population;
-    population.reserve(size);
-    for (std::size_t i = 0; i < size; ++i) {
-        population.push_back(std::make_unique<Genome<double>>(
-            Genome<double>{dist(gen), dist(gen), dist(gen)}));
-    }
-    return population;
-}
-
 int main() {
     StdPolicy policy;
-    PrintCallback callback; // prints generation/fitness/genome each round
+    // 100 individuals, 3 genes each (a, b, c), each drawn from [-10, 10]
+    policy.set_random_init(/* population_size = */ 100, /* genome_len = */ 3, -10.0, 10.0);
+
+    PrintCallback print_cb; // prints generation/fitness/genome each round
 
     Evolver<double> evolver(
-        make_init_population(100),   // initial population
         crossover_arithmetic<double>, // averages parents' genes
         mutate_gaussian<double>,      // perturbs genes with Gaussian noise
-        &callback,
+        {&print_cb},                 // callbacks, invoked in order each generation
         &policy,
         /* mutation_prob  = */ 40,   // out of 255, ~16% per offspring
         /* crossover_prob = */ 200); // out of 255, ~78% per offspring
@@ -146,6 +148,14 @@ int main() {
         best.data()[0], best.data()[1], best.data()[2]);
 }
 ```
+
+The policy owns the initial population: `set_random_init()` draws
+`genome_len` genes per individual uniformly from `[lo, hi]`, choosing an
+integer or real distribution based on `T` — so no manual
+population-building code is needed. For non-uniform or otherwise custom
+initialization, build a `PopulationVec<T>` yourself (see
+`make_random_population` in `population_init.hpp`, or build it by hand)
+and pass it to `policy.set_init_population()` instead.
 
 The full runnable version of this example lives in `src/main.cpp` and
 builds as the `areo-evo-demo` target:
