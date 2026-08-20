@@ -8,11 +8,17 @@
 
 #pragma once
 
-#include <cstdint>
 #include <initializer_list>
 #include <memory>
 #include <utility>
 #include <vector>
+
+/**
+ * @brief Owning pointer to a heap-allocated array of genes of type T.
+ * @tparam T Gene type stored in the array.
+ */
+template <typename T>
+using GenomeList = std::unique_ptr<T[]>;
 
 /**
  * @brief Owns a heap-allocated sequence of genes of type T.
@@ -21,7 +27,7 @@
 template <typename T>
 class Genome {
 private:
-    T* dna_seq_;
+    GenomeList<T> dna_seq_;
     int len_;
 
 public:
@@ -30,7 +36,7 @@ public:
      * @return Pointer to the first gene in the sequence.
      */
     T* data() {
-        return this->dna_seq_;
+        return this->dna_seq_.get();
     }
 
     /**
@@ -38,7 +44,7 @@ public:
      * @return Pointer to the first gene in the sequence.
      */
     const T* data() const {
-        return this->dna_seq_;
+        return this->dna_seq_.get();
     }
 
     /**
@@ -53,13 +59,10 @@ public:
      * @brief Constructs a Genome from an initializer list of genes.
      * @param seq Genes to move into the newly allocated DNA sequence.
      */
-    Genome(std::initializer_list<T> seq) {
-        this->dna_seq_ = new T[seq.size()];
-        if (this->dna_seq_ == nullptr) {
-            delete[] this->dna_seq_;
-            // error while alllocating mem on the heap for genome
-        }
-        this->len_ = seq.size();
+    Genome(std::initializer_list<T> seq):
+    dna_seq_{std::make_unique<T[]>(seq.size())},
+    len_{static_cast<int>(seq.size())}
+    {
         for (int i = 0; i < this->len_; ++i) {
             this->dna_seq_[i] = std::move(seq.begin()[i]);
         }
@@ -69,8 +72,10 @@ public:
      * @brief Move-constructs a Genome, stealing other's DNA sequence.
      * @param other Genome to move from; left empty (nullptr, len 0).
      */
-    Genome(Genome&& other) noexcept: dna_seq_{other.dna_seq_}, len_{other.len_} {
-        other.dna_seq_ = nullptr;
+    Genome(Genome&& other) noexcept:
+    dna_seq_{std::move(other.dna_seq_)},
+    len_{other.len_}
+    {
         other.len_ = 0;
     }
 
@@ -82,10 +87,8 @@ public:
      */
     Genome& operator=(Genome&& other) noexcept {
         if (this != &other) {
-            delete[] this->dna_seq_;
-            this->dna_seq_ = other.dna_seq_;
+            this->dna_seq_ = std::move(other.dna_seq_);
             this->len_ = other.len_;
-            other.dna_seq_ = nullptr;
             other.len_ = 0;
         }
 
@@ -96,7 +99,10 @@ public:
      * @brief Copy-constructs a Genome, deep-copying other's DNA sequence.
      * @param other Genome to copy from.
      */
-    Genome(const Genome& other): dna_seq_{new T[other.len_]}, len_{other.len_} {
+    Genome(const Genome& other):
+    dna_seq_{std::make_unique<T[]>(other.len_)},
+    len_{other.len_}
+    {
         for (int i = 0; i < this->len_; ++i) {
             this->dna_seq_[i] = other.dna_seq_[i];
         }
@@ -110,12 +116,11 @@ public:
      */
     Genome& operator=(const Genome& other) {
         if (this != &other) {
-            T* new_seq = new T[other.len_];
+            GenomeList<T> new_seq = std::make_unique<T[]>(other.len_);
             for (int i = 0; i < other.len_; ++i) {
                 new_seq[i] = other.dna_seq_[i];
             }
-            delete[] this->dna_seq_;
-            this->dna_seq_ = new_seq;
+            this->dna_seq_ = std::move(new_seq);
             this->len_ = other.len_;
         }
 
@@ -125,11 +130,7 @@ public:
     /**
      * @brief Releases the DNA sequence's heap allocation, if any.
      */
-    ~Genome() {
-        if (this->dna_seq_ != nullptr) {
-            delete[] this->dna_seq_;
-        }
-    }
+    ~Genome() = default;
 
 };
 
