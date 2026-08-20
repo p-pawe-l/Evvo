@@ -10,12 +10,17 @@ file(GLOB AREO_SOURCES
     ${CMAKE_SOURCE_DIR}/areo-src/*.cpp
     ${CMAKE_SOURCE_DIR}/src/*.cpp
 )
+list(REMOVE_ITEM AREO_SOURCES ${CMAKE_SOURCE_DIR}/src/main.cpp)
 
 add_library(areo-evo ${AREO_SOURCES})
 target_include_directories(areo-evo PUBLIC
     ${CMAKE_SOURCE_DIR}/areo-include
     ${CMAKE_SOURCE_DIR}/include
 )
+
+# --- Demo executable ---
+add_executable(areo-evo-demo ${CMAKE_SOURCE_DIR}/src/main.cpp)
+target_link_libraries(areo-evo-demo PRIVATE areo-evo)
 
 # --- Testing (Catch2) ---
 option(AREO_BUILD_TESTS "Build tests" ON)
