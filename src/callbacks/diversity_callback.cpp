@@ -3,7 +3,7 @@
  * @brief Implements DiversityCallback.
  */
 
-#include "evo_callbacks.hpp"
+#include "callbacks/evo_callbacks.hpp"
 
 #include <iostream>
 

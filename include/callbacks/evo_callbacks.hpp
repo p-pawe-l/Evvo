@@ -15,8 +15,8 @@
 #include <string>
 #include <vector>
 
-#include "evo_callback.hpp"
-#include "generation_stats.hpp"
+#include "callbacks/evo_callback.hpp"
+#include "core/generation_stats.hpp"
 
 /**
  * @brief Bitmask selecting which fields PrintCallback prints each

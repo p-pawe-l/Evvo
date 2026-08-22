@@ -9,12 +9,14 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <type_traits>
 #include <vector>
 
-#include "genome.hpp"
-#include "evo_policy.hpp"
-#include "evo_callback.hpp"
-#include "generation_stats.hpp"
+#include "core/genome.hpp"
+#include "core/evo_policy.hpp"
+#include "callbacks/evo_callback.hpp"
+#include "core/generation_stats.hpp"
+#include "selection/selector.hpp"
 
 /**
  * @brief Runs a genetic-algorithm evolution loop over a population of
@@ -29,11 +31,15 @@ template <typename T> class Evolver {
 private:
     std::vector<EvoCallback<T>*> callbacks_;
     EvoPolicy<T>* policy_;
+    std::unique_ptr<Selector<PopulationEval>> selector_;
 
 public:
     /**
-     * @brief Constructs an Evolver with the crossover/mutation functions
-     *        and probabilities to use.
+     * @brief Constructs an Evolver with the crossover/mutation functions,
+     *        parent-selection strategy, and probabilities to use.
+     * @tparam SelectorT Concrete Selector<PopulationEval> implementation
+     *                   (e.g. RouletteSelector, RankSelector); deduced
+     *                   from selector.
      * @param cross_func Function applied to two parent individuals to
      *                   produce a new offspring individual; decides
      *                   itself which genes to combine and how.
@@ -46,16 +52,25 @@ public:
      *               select, score, and evolve populations thereafter;
      *               must have set_init_population()/set_random_init()
      *               called on it before run().
+     * @param selector Parent-selection strategy, e.g.
+     *                 RankSelector(RankSelectionType::LINEAR, 0.7);
+     *                 owned by this Evolver for its whole lifetime and
+     *                 handed to policy via EvoPolicy<T>::set_selector().
      * @param mutation_prob Probability threshold (0-255) for mutation.
      * @param crossover_prob Probability threshold (0-255) for crossover.
      */
+    template <typename SelectorT>
     Evolver(std::function<IndPtr<T>(const IndPtr<T>&, const IndPtr<T>&)> cross_func,
             std::function<IndPtr<T>(const IndPtr<T>&)> mut_func,
-            std::vector<EvoCallback<T>*> callbacks, EvoPolicy<T>* policy, uint8_t mutation_prob,
-            uint8_t crossover_prob)
-        : callbacks_{std::move(callbacks)}, policy_{policy} {
+            std::vector<EvoCallback<T>*> callbacks, EvoPolicy<T>* policy, SelectorT selector,
+            uint8_t mutation_prob, uint8_t crossover_prob)
+        : callbacks_{std::move(callbacks)}, policy_{policy},
+          selector_{std::make_unique<SelectorT>(std::move(selector))} {
+        static_assert(std::is_base_of_v<Selector<PopulationEval>, SelectorT>,
+                     "Evolver: selector must derive from Selector<PopulationEval>");
         this->policy_->set_cross_func(cross_func, crossover_prob);
         this->policy_->set_mut_func(mut_func, mutation_prob);
+        this->policy_->set_selector(this->selector_.get());
     }
 
     /**
@@ -83,7 +98,7 @@ public:
                 break;
             }
 
-            PopulationEval<T> eval = this->policy_->evaluate(new_pop);
+            PopulationEval eval = this->policy_->evaluate(new_pop);
             Genome<T>* best = new_pop[eval.best_index].get();
 
             if (best_genome == nullptr || eval.best_fitness > best_fitness) {

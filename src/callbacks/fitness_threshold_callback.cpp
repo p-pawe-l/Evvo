@@ -3,7 +3,7 @@
  * @brief Implements FitnessThresholdCallback.
  */
 
-#include "evo_callbacks.hpp"
+#include "callbacks/evo_callbacks.hpp"
 
 FitnessThresholdCallback::FitnessThresholdCallback(double threshold) : threshold_{threshold} {}
 

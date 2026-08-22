@@ -12,8 +12,8 @@
 #include <algorithm>
 #include <memory>
 
-#include "genome.hpp"
-#include "rand_util.hpp"
+#include "core/genome.hpp"
+#include "util/rand_util.hpp"
 
 /**
  * @brief Combines two parents by splitting their genomes at a single

@@ -6,12 +6,13 @@
 
 #include <cstdio>
 
-#include "cross_func.hpp"
-#include "evo_callbacks.hpp"
-#include "evolver.hpp"
-#include "genome.hpp"
-#include "mut_func.hpp"
-#include "std_policy.hpp"
+#include "genetic_ops/cross_func.hpp"
+#include "callbacks/evo_callbacks.hpp"
+#include "core/evolver.hpp"
+#include "core/genome.hpp"
+#include "genetic_ops/mut_func.hpp"
+#include "selection/rank_selector.hpp"
+#include "core/std_policy.hpp"
 
 double target(double x) {
     return (5.0 * x * x) + (7.0 * x) + 2.0;
@@ -41,6 +42,7 @@ int main() {
                             mutate_gaussian<double>,      // perturbs genes with Gaussian noise
                             {&print_cb}, // callbacks, invoked in order each generation
                             &policy,
+                            RankSelector(RankSelectionType::LINEAR, 0.7), // parent selection
                             /* mutation_prob  = */ 40,   // out of 255, ~16% per offspring
                             /* crossover_prob = */ 200); // out of 255, ~78% per offspring
 

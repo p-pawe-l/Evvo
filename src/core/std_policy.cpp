@@ -4,25 +4,10 @@
  *        used to drive standard genetic-algorithm runs over double genomes.
  */
 
-#include "std_policy.hpp"
+#include "core/std_policy.hpp"
 
+#include <cassert>
 #include <random>
-
-std::size_t StdPolicy::roulette_pick(const PopulationEval<double>& eval) {
-    static std::random_device rd;
-    static std::mt19937 gen(rd());
-    std::uniform_real_distribution<double> dist(0.0, eval.total_fitness);
-    double target = dist(gen);
-
-    double cumulative = 0.0;
-    for (std::size_t i = 0; i < eval.fitnesses.size(); ++i) {
-        cumulative += eval.fitnesses[i];
-        if (cumulative >= target) {
-            return i;
-        }
-    }
-    return eval.fitnesses.size() - 1;
-}
 
 bool StdPolicy::roll(uint8_t prob) {
     static std::random_device rd;
@@ -32,19 +17,21 @@ bool StdPolicy::roll(uint8_t prob) {
 }
 
 std::pair<const IndPtr<double>*, const IndPtr<double>*>
-StdPolicy::choose_parents(const PopulationVec<double>& population,
-                          const PopulationEval<double>& eval) {
-    std::size_t first = roulette_pick(eval);
-    std::size_t second = roulette_pick(eval);
+StdPolicy::choose_parents(const PopulationVec<double>& population) {
+    std::size_t first = selector_->pick();
+    std::size_t second = selector_->pick();
     return {&population[first], &population[second]};
 }
 
 PopulationVec<double> StdPolicy::create_new_population(const PopulationVec<double>& prev,
-                                                       const PopulationEval<double>& eval) {
+                                                       const PopulationEval& eval) {
+    assert(selector_ != nullptr && "StdPolicy: call set_selector() before create_new_population()");
+    selector_->build_from_eval(eval);
+
     PopulationVec<double> new_pop;
     new_pop.reserve(prev.size());
     while (new_pop.size() != prev.size()) {
-        auto parents = choose_parents(prev, eval);
+        auto parents = choose_parents(prev);
 
         IndPtr<double> offspring = roll(crossover_prob_)
                                        ? cross_func_(*parents.first, *parents.second)
@@ -59,8 +46,8 @@ PopulationVec<double> StdPolicy::create_new_population(const PopulationVec<doubl
     return new_pop;
 }
 
-PopulationEval<double> StdPolicy::evaluate(const PopulationVec<double>& population) {
-    PopulationEval<double> eval;
+PopulationEval StdPolicy::evaluate(const PopulationVec<double>& population) {
+    PopulationEval eval;
     eval.fitnesses.reserve(population.size());
 
     eval.fitnesses.push_back(eval_func_(population[0].get()));

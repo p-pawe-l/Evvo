@@ -8,7 +8,7 @@
 
 #include <cstddef>
 
-#include "genome.hpp"
+#include "../core/genome.hpp"
 
 /**
  * @brief Builds a population of population_size genomes, each with

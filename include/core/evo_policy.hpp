@@ -11,9 +11,10 @@
 #include <functional>
 #include <vector>
 
-#include "genome.hpp"
-#include "population_init.hpp"
-#include "rand_util.hpp"
+#include "../core/genome.hpp"
+#include "../core/population_init.hpp"
+#include "../selection/selector.hpp"
+#include "../util/rand_util.hpp"
 
 /**
  * @brief Result of a single pass over a population evaluating every
@@ -21,9 +22,8 @@
  *        fitness (indexed the same as the population it was computed
  *        from) alongside the aggregates, so later steps (e.g. parent
  *        selection) can reuse it instead of calling eval_func_ again.
- * @tparam T Gene type of the genomes that were evaluated.
  */
-template <typename T> struct PopulationEval {
+struct PopulationEval {
     std::vector<double> fitnesses;
     std::size_t best_index;
     double best_fitness;
@@ -42,6 +42,11 @@ protected:
     std::function<IndPtr<T>(const IndPtr<T>&)> mut_func_;
     uint8_t crossover_prob_;
     uint8_t mutation_prob_;
+
+    // Non-owning: lifetime is managed by whoever configures this policy
+    // (see Evolver<T>, which owns the concrete Selector it constructs
+    // and outlives every create_new_population() call it's used in).
+    Selector<PopulationEval>* selector_ = nullptr;
 
     PopulationVec<T> init_population_;
     bool has_init_population_ = false;
@@ -124,6 +129,14 @@ public:
     }
 
     /**
+     * @brief Sets the parent-selection strategy used by
+     *        create_new_population().
+     * @param selector Selector to pick parents with; must outlive every
+     *                 create_new_population() call made on this policy.
+     */
+    void set_selector(Selector<PopulationEval>* selector) { this->selector_ = selector; }
+
+    /**
      * @brief Produces the next generation from the current population.
      * @param population Current generation of genomes.
      * @param eval Fitnesses of population, as computed by evaluate();
@@ -131,7 +144,7 @@ public:
      * @return The new, owned population for the next generation.
      */
     virtual PopulationVec<T> create_new_population(const PopulationVec<T>& population,
-                                                   const PopulationEval<T>& eval) = 0;
+                                                   const PopulationEval& eval) = 0;
 
     /**
      * @brief Evaluates every individual in a population exactly once,
@@ -141,5 +154,5 @@ public:
      * @param population Population to evaluate; must be non-empty.
      * @return The per-individual fitnesses and aggregates found.
      */
-    virtual PopulationEval<T> evaluate(const PopulationVec<T>& population) = 0;
+    virtual PopulationEval evaluate(const PopulationVec<T>& population) = 0;
 };

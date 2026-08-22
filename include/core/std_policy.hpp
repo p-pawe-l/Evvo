@@ -10,39 +10,28 @@
 #include <cstdint>
 #include <utility>
 
-#include "evo_policy.hpp"
-#include "genome.hpp"
+#include "core/evo_policy.hpp"
+#include "core/genome.hpp"
 
 /**
  * @brief Default EvoPolicy<double> implementation: selects parents via
- *        fitness-proportionate (roulette wheel) selection, applies
- *        crossover/mutation, and reports fitness over a population of
- *        Genome<double>.
+ *        whatever Selector<PopulationEval> is configured via
+ *        set_selector(), applies crossover/mutation, and reports fitness
+ *        over a population of Genome<double>.
  */
 class StdPolicy : public EvoPolicy<double> {
 private:
     /**
      * @brief Selects two parent individuals from a population to breed,
-     *        biased toward fitter individuals via roulette wheel
-     *        selection over eval.fitnesses.
+     *        via the configured Selector. selector_->build_from_eval()
+     *        must already have been called for this generation.
      * @param population Population to select parents from.
-     * @param eval Fitnesses of population, as computed by evaluate();
-     *             used to bias selection toward fitter individuals.
      * @return Non-owning pointers to the two chosen parents' IndPtr slots
      *         in population; remain valid only as long as population is
      *         alive.
      */
     std::pair<const IndPtr<double>*, const IndPtr<double>*>
-    choose_parents(const PopulationVec<double>& population, const PopulationEval<double>& eval);
-
-    /**
-     * @brief Picks a single individual via roulette wheel selection,
-     *        weighted by eval.fitnesses; assumes every fitness is
-     *        non-negative and eval.total_fitness > 0.
-     * @param eval Fitnesses to weight selection by.
-     * @return Index of the chosen individual.
-     */
-    static std::size_t roulette_pick(const PopulationEval<double>& eval);
+    choose_parents(const PopulationVec<double>& population);
 
     /**
      * @brief Rolls whether an event with the given probability threshold
@@ -65,7 +54,7 @@ public:
      * @return The new, owned population for the next generation.
      */
     PopulationVec<double> create_new_population(const PopulationVec<double>& prev,
-                                                const PopulationEval<double>& eval) override;
+                                                const PopulationEval& eval) override;
 
     /**
      * @brief Evaluates every individual in the population exactly once
@@ -75,5 +64,5 @@ public:
      * @param population Population to evaluate; must be non-empty.
      * @return The per-individual fitnesses and aggregates found.
      */
-    PopulationEval<double> evaluate(const PopulationVec<double>& population) override;
+    PopulationEval evaluate(const PopulationVec<double>& population) override;
 };

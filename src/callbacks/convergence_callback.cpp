@@ -3,7 +3,7 @@
  * @brief Implements ConvergenceCallback.
  */
 
-#include "evo_callbacks.hpp"
+#include "callbacks/evo_callbacks.hpp"
 
 ConvergenceCallback::ConvergenceCallback(int patience, double min_delta)
     : patience_{patience}, min_delta_{min_delta} {}

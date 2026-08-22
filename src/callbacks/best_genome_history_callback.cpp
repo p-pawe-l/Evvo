@@ -3,7 +3,7 @@
  * @brief Implements BestGenomeHistoryCallback.
  */
 
-#include "evo_callbacks.hpp"
+#include "callbacks/evo_callbacks.hpp"
 
 void BestGenomeHistoryCallback::call(const GenerationStats<double>& stats) {
     this->history_.push_back(Entry{.generation = stats.generation,

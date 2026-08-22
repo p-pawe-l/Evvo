@@ -12,8 +12,8 @@
 #include <memory>
 #include <random>
 
-#include "genome.hpp"
-#include "rand_util.hpp"
+#include "core/genome.hpp"
+#include "util/rand_util.hpp"
 
 /**
  * @brief Perturbs every gene by adding zero-mean Gaussian noise, useful

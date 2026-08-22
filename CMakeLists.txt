@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # --- Library sources ---
-file(GLOB EVVO_SOURCES ${CMAKE_SOURCE_DIR}/src/*.cpp)
+file(GLOB_RECURSE EVVO_SOURCES ${CMAKE_SOURCE_DIR}/src/*.cpp)
 list(REMOVE_ITEM EVVO_SOURCES ${CMAKE_SOURCE_DIR}/src/main.cpp)
 
 add_library(evvo ${EVVO_SOURCES})

@@ -8,7 +8,7 @@
 
 #include <vector>
 
-#include "genome.hpp"
+#include "core/genome.hpp"
 
 /**
  * @brief Snapshot of a single generation's evolution results.

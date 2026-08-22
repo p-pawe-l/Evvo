@@ -14,9 +14,11 @@
  *        fitness array, etc.) in their constructor, so repeated pick()
  *        calls across a generation stay cheap.
  */
-class Selector {
+template <typename EvalT> class Selector {
 public:
     virtual ~Selector() = default;
+
+    virtual void build_from_eval(const EvalT& eval) = 0;
 
     /**
      * @brief Selects a single individual.

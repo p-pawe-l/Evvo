@@ -7,9 +7,7 @@
 
 #pragma once
 
-#include <vector>
-
-#include "evo_policy.hpp"
+#include "../core/evo_policy.hpp"
 #include "selector.hpp"
 
 /**
@@ -18,17 +16,13 @@
  *        individual with probability proportional to its share of total
  *        fitness in O(log n) per pick.
  */
-class RouletteSelector : public Selector {
+class RouletteSelector : public Selector<PopulationEval> {
 private:
-    std::vector<double> cumulative_;
+    double total_fitness_;
+    const std::vector<double> *fitnesses_;    
 
 public:
-    /**
-     * @brief Builds the cumulative fitness array to pick from.
-     * @param eval Fitnesses of the population to select from; must be
-     *             non-empty.
-     */
-    explicit RouletteSelector(const PopulationEval& eval);
+    void build_from_eval(const PopulationEval& eval) override;
 
     [[nodiscard]] std::size_t pick() const override;
 };
