@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "callbacks/callback.hpp"
-#include "core/generation_stats.hpp"
+#include "callback.hpp"
+#include "../core/generation_stats.hpp"
 
 /**
  * @brief Callback specialized for GenerationStats<T>.
