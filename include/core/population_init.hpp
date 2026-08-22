@@ -11,6 +11,16 @@
 #include "../core/genome.hpp"
 
 /**
+ * @brief Parameters for make_random_population function
+ * @param population_size_ Size of initial population
+ * @param genome_len_ Length of each individual genome  
+ */
+struct InitPopSizeParams {
+    const std::size_t population_size_;
+    const std::size_t genome_len_;
+};
+
+/**
  * @brief Builds a population of population_size genomes, each with
  *        genome_len genes produced by invoking gene_gen once per gene.
  * @tparam T Gene type of the genomes to build.
@@ -22,12 +32,11 @@
  * @return The newly built population.
  */
 template <typename T, typename Generator>
-PopulationVec<T> make_random_population(std::size_t population_size, std::size_t genome_len,
-                                        Generator gene_gen) {
+PopulationVec<T> make_random_population(const InitPopSizeParams& params, Generator gene_gen) {
     PopulationVec<T> population;
-    population.reserve(population_size);
-    for (std::size_t i = 0; i < population_size; ++i) {
-        population.push_back(std::make_unique<Genome<T>>(genome_len, gene_gen));
+    population.reserve(params.population_size_);
+    for (std::size_t i = 0; i < params.population_size_; ++i) {
+        population.push_back(std::make_unique<Genome<T>>(params.genome_len_, gene_gen));
     }
     return population;
 }
