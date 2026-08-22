@@ -1,144 +1,62 @@
 /**
  * @file genome.hpp
- * @brief Defines the Genome<T> container, which owns a heap-allocated DNA
- *        sequence. Mutation/crossover are performed by free functions
- *        (see EvoPolicy<T>::mut_func_/cross_func_) operating on IndPtr<T>,
- *        not by Genome itself.
+ * @brief Defines Genome<T>, an individual's DNA sequence, and the
+ *        make_*_genome() functions used to build one.
  */
 
 #pragma once
 
-#include <initializer_list>
-#include <memory>
-#include <utility>
+#include <cstddef>
 #include <vector>
 
 /**
- * @brief Owning pointer to a heap-allocated array of genes of type T.
- * @tparam T Gene type stored in the array.
+ * @brief An individual's DNA sequence: a runtime-sized sequence of genes
+ *        of type T. Plain std::vector<T> under the alias — deep copy,
+ *        move, initializer-list construction, .data()/.size() are all
+ *        already exactly what's needed, so there's nothing for a wrapper
+ *        class to add.
+ * @tparam T Gene type stored in the sequence.
  */
-template <typename T> using GenomeList = std::unique_ptr<T[]>;
+template <typename T>
+using Genome = std::vector<T>;
 
 /**
- * @brief Owns a heap-allocated sequence of genes of type T.
- * @tparam T Gene type stored in the DNA sequence.
+ * @brief Builds a Genome of len genes, each produced by invoking
+ *        gene_gen once per gene (e.g. a random-value generator).
+ * @tparam T Gene type of the genome to build.
+ * @tparam Generator Callable with signature T().
+ * @param len Number of genes to generate.
+ * @param gene_gen Invoked once per gene to produce its value.
+ * @return The newly built genome.
  */
-template <typename T> class Genome {
-private:
-    GenomeList<T> dna_seq_;
-    std::size_t len_;
-
-public:
-    /**
-     * @brief Accesses the raw DNA sequence.
-     * @return Pointer to the first gene in the sequence.
-     */
-    T* data() { return this->dna_seq_.get(); }
-
-    /**
-     * @brief Accesses the raw DNA sequence.
-     * @return Pointer to the first gene in the sequence.
-     */
-    const T* data() const { return this->dna_seq_.get(); }
-
-    /**
-     * @brief Number of genes in the DNA sequence.
-     * @return Length of the DNA sequence.
-     */
-    std::size_t size() const noexcept { return this->len_; }
-
-    /**
-     * @brief Constructs a Genome from an initializer list of genes.
-     * @param seq Genes to move into the newly allocated DNA sequence.
-     */
-    Genome(std::initializer_list<T> seq)
-        : dna_seq_{std::make_unique<T[]>(seq.size())}, len_{static_cast<std::size_t>(seq.size())} {
-        for (int i = 0; i < this->len_; ++i) {
-            this->dna_seq_[i] = std::move(seq.begin()[i]);
-        }
+template <typename T, typename Generator>
+Genome<T> make_genome(const std::size_t len, Generator gene_gen) {
+    Genome<T> genome(len);
+    for (std::size_t i = 0; i < len; ++i) {
+        genome[i] = gene_gen();
     }
-
-    /**
-     * @brief Constructs a Genome of len genes, each produced by invoking
-     *        gene_gen once per gene (e.g. a random-value generator).
-     * @tparam Generator Callable with signature T().
-     * @param len Number of genes to generate.
-     * @param gene_gen Invoked once per gene to produce its value.
-     */
-    template <typename Generator>
-    Genome(std::size_t len, Generator gene_gen) : dna_seq_{std::make_unique<T[]>(len)}, len_{len} {
-        for (std::size_t i = 0; i < this->len_; ++i) {
-            this->dna_seq_[i] = gene_gen();
-        }
-    }
-
-    /**
-     * @brief Move-constructs a Genome, stealing other's DNA sequence.
-     * @param other Genome to move from; left empty (nullptr, len 0).
-     */
-    Genome(Genome&& other) noexcept : dna_seq_{std::move(other.dna_seq_)}, len_{other.len_} {
-        other.len_ = 0;
-    }
-
-    /**
-     * @brief Move-assigns a Genome, releasing this genome's current DNA
-     *        sequence and stealing other's.
-     * @param other Genome to move from; left empty (nullptr, len 0).
-     * @return Reference to this Genome.
-     */
-    Genome& operator=(Genome&& other) noexcept {
-        if (this != &other) {
-            this->dna_seq_ = std::move(other.dna_seq_);
-            this->len_ = other.len_;
-            other.len_ = 0;
-        }
-
-        return *this;
-    }
-
-    /**
-     * @brief Copy-constructs a Genome, deep-copying other's DNA sequence.
-     * @param other Genome to copy from.
-     */
-    Genome(const Genome& other) : dna_seq_{std::make_unique<T[]>(other.len_)}, len_{other.len_} {
-        for (std::size_t i = 0; i < this->len_; ++i) {
-            this->dna_seq_[i] = other.dna_seq_[i];
-        }
-    }
-
-    /**
-     * @brief Copy-assigns a Genome, deep-copying other's DNA sequence into
-     *        a freshly allocated buffer before releasing the old one.
-     * @param other Genome to copy from.
-     * @return Reference to this Genome.
-     */
-    Genome& operator=(const Genome& other) {
-        if (this != &other) {
-            GenomeList<T> new_seq = std::make_unique<T[]>(other.len_);
-            for (int i = 0; i < other.len_; ++i) {
-                new_seq[i] = other.dna_seq_[i];
-            }
-            this->dna_seq_ = std::move(new_seq);
-            this->len_ = other.len_;
-        }
-
-        return *this;
-    }
-
-    /**
-     * @brief Releases the DNA sequence's heap allocation, if any.
-     */
-    ~Genome() = default;
-};
+    return genome;
+}
 
 /**
- * @brief Owning pointer to a single individual in a population.
- * @tparam T Gene type of the genome being owned.
+ * @brief Builds a Genome of len genes, all zero-initialized.
+ * @tparam T Gene type of the genome to build; must be value-initializable.
+ * @param len Number of genes.
+ * @return The newly built, all-zero genome.
  */
-template <typename T> using IndPtr = std::unique_ptr<Genome<T>>;
+template <typename T>
+Genome<T> make_zero_genome(std::size_t len) {
+    return Genome<T>(len, T{});
+}
 
 /**
- * @brief An owned population of individuals.
- * @tparam T Gene type of the genomes in the population.
+ * @brief Builds a Genome of len genes, all set to the same value.
+ * @tparam T Gene type of the genome to build.
+ * @param len Number of genes.
+ * @param value Value every gene is set to.
+ * @return The newly built, uniformly-valued genome.
  */
-template <typename T> using PopulationVec = std::vector<IndPtr<T>>;
+template <typename T>
+Genome<T> make_filled_genome(std::size_t len, const T& value) {
+    return Genome<T>(len, value);
+}
