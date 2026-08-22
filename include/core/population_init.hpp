@@ -26,8 +26,7 @@ struct InitPopSizeParams {
  * @tparam T Gene type of the genomes to build.
  * @tparam Generator Callable with signature T(), e.g. a random-value
  *                    generator; called population_size * genome_len times.
- * @param population_size Number of individuals to generate.
- * @param genome_len Number of genes per individual.
+ * @param params Structurized parameters for init population building
  * @param gene_gen Invoked once per gene to produce its value.
  * @return The newly built population.
  */
