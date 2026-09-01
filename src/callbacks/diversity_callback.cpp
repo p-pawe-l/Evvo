@@ -1,8 +1,3 @@
-/**
- * @file diversity_callback.cpp
- * @brief Implements DiversityCallback.
- */
-
 #include "callbacks/evo_callbacks.hpp"
 
 #include <iostream>
@@ -11,19 +6,19 @@ DiversityCallback::DiversityCallback(bool print) : print_{print} {}
 
 void DiversityCallback::call(const GenerationStats<double>& stats) {
     const std::size_t pop_size = stats.population.size();
-    const std::size_t genome_len = pop_size > 0 ? stats.population[0]->size() : 0;
+    const std::size_t genome_len = pop_size > 0 ? stats.population[0].size() : 0;
 
     double diversity = 0.0;
     for (std::size_t gene = 0; gene < genome_len; ++gene) {
         double mean = 0.0;
         for (const auto& individual : stats.population) {
-            mean += individual->data()[gene];
+            mean += individual[gene];
         }
         mean /= static_cast<double>(pop_size);
 
         double variance = 0.0;
         for (const auto& individual : stats.population) {
-            const double diff = individual->data()[gene] - mean;
+            const double diff = individual[gene] - mean;
             variance += diff * diff;
         }
         variance /= static_cast<double>(pop_size);

@@ -1,8 +1,3 @@
-/**
- * @file best_genome_history_callback.cpp
- * @brief Implements BestGenomeHistoryCallback.
- */
-
 #include "callbacks/evo_callbacks.hpp"
 
 void BestGenomeHistoryCallback::call(const GenerationStats<double>& stats) {

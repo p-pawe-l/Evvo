@@ -1,8 +1,3 @@
-/**
- * @file print_callback.cpp
- * @brief Implements PrintCallback.
- */
-
 #include "callbacks/evo_callbacks.hpp"
 
 #include <iostream>
@@ -33,9 +28,8 @@ void PrintCallback::call(const GenerationStats<double>& stats) {
     if (has_flag(this->fields_, PrintField::Genome)) {
         separator();
         std::cout << "genome:";
-        Genome<double>* best = stats.best_genome;
-        for (std::size_t i = 0; i < best->size(); ++i) {
-            std::cout << ' ' << best->data()[i];
+        for (double gene : *stats.best_genome) {
+            std::cout << ' ' << gene;
         }
     }
 

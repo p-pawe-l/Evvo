@@ -1,8 +1,3 @@
-/**
- * @file checkpoint_callback.cpp
- * @brief Implements CheckpointCallback.
- */
-
 #include "callbacks/evo_callbacks.hpp"
 
 #include <fstream>
@@ -18,10 +13,9 @@ void CheckpointCallback::call(const GenerationStats<double>& stats) {
 
     std::ofstream out(this->filename_, std::ios::trunc);
 
-    Genome<double>* best = stats.best_genome;
     out << stats.generation << ',' << stats.best_fitness;
-    for (std::size_t i = 0; i < best->size(); ++i) {
-        out << ',' << best->data()[i];
+    for (double gene : *stats.best_genome) {
+        out << ',' << gene;
     }
     out << '\n';
 }
