@@ -12,6 +12,13 @@ double random_double(double lo, double hi) {
     return dist(gen);
 }
 
+double random_gaussian(double mean, double std_dev) {
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    std::normal_distribution<double> dist(mean, std_dev);
+    return dist(gen);
+}
+
 // Picks std::uniform_int_distribution or std::uniform_real_distribution
 // based on whether T is an integral type.
 template <typename T> T random_value(T lo, T hi) {
