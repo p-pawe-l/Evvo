@@ -45,3 +45,8 @@ Add as well potential problems with such solution and advantages.
 ## Naming
 Private members: snake_case_ with a trailing underscore. Types: PascalCase.
 Free functions and methods: snake_case.
+
+## Formatting and Linting
+After each part of the development run formatting and linting. With problems indicated
+by linter inform before taking any actions.
+
