@@ -1,6 +1,6 @@
 /**
  * @file evo_callbacks.hpp
- * @brief Declares concrete EvoCallback<double> implementations.
+ * @brief Declares concrete Callback<double> implementations.
  *        Implemented in src/print_callback.cpp, src/save_to_file_callback.cpp,
  *        src/checkpoint_callback.cpp, src/convergence_callback.cpp,
  *        src/fitness_threshold_callback.cpp, src/diversity_callback.cpp,
@@ -15,7 +15,7 @@
 #include <string>
 #include <vector>
 
-#include "evo_callback.hpp"
+#include "callback.hpp"
 #include "../core/generation_stats.hpp"
 
 /**
@@ -61,7 +61,7 @@ constexpr bool has_flag(PrintField flags, PrintField flag) {
  *        (generation number, best/average fitness, best genome's genes)
  *        to stdout.
  */
-class PrintCallback : public EvoCallback<double> {
+class PrintCallback : public Callback<double> {
 private:
     PrintField fields_;
 
@@ -81,7 +81,7 @@ public:
  *        genome's genes as a CSV row to a file; the file is truncated
  *        when the callback is constructed.
  */
-class SaveToFileCallback : public EvoCallback<double> {
+class SaveToFileCallback : public Callback<double> {
 private:
     std::string filename_;
 
@@ -96,7 +96,7 @@ public:
  *        long run can be resumed from the latest checkpoint after a crash
  *        instead of restarting from scratch.
  */
-class CheckpointCallback : public EvoCallback<double> {
+class CheckpointCallback : public Callback<double> {
 private:
     std::string filename_;
     int interval_;
@@ -119,7 +119,7 @@ public:
  *        patience generations without improving by at least min_delta,
  *        so runs don't keep burning generations after plateauing.
  */
-class ConvergenceCallback : public EvoCallback<double> {
+class ConvergenceCallback : public Callback<double> {
 private:
     int patience_;
     double min_delta_;
@@ -146,7 +146,7 @@ public:
  *        a caller-chosen target, useful when the objective's goal value is
  *        known ahead of time.
  */
-class FitnessThresholdCallback : public EvoCallback<double> {
+class FitnessThresholdCallback : public Callback<double> {
 private:
     double threshold_;
     bool reached_ = false;
@@ -169,7 +169,7 @@ public:
  *        across the population. A shrinking value signals the population
  *        is converging (or prematurely converging) around similar genomes.
  */
-class DiversityCallback : public EvoCallback<double> {
+class DiversityCallback : public Callback<double> {
 private:
     bool print_;
     std::vector<double> history_;
@@ -195,7 +195,7 @@ public:
  *        the full optimization trajectory can be inspected or plotted
  *        after the run finishes rather than only the final result.
  */
-class BestGenomeHistoryCallback : public EvoCallback<double> {
+class BestGenomeHistoryCallback : public Callback<double> {
 public:
     /**
      * @brief One recorded generation: its index, best fitness, and a deep
@@ -225,7 +225,7 @@ public:
  *        row to a file; the file is truncated when the callback is
  *        constructed.
  */
-class StatsSummaryCallback : public EvoCallback<double> {
+class StatsSummaryCallback : public Callback<double> {
 private:
     std::string filename_;
 
