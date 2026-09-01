@@ -1,28 +1,19 @@
-/**
- * @file evo_policy.hpp
- * @brief Defines EvoPolicy<T>, the strategy interface Evolver<T> delegates
- *        to for producing the next generation from the current population.
- */
-
 #pragma once
 
 #include <cassert>
 #include <cstddef>
 #include <functional>
+#include <utility>
 #include <vector>
 
 #include "../core/genome.hpp"
 #include "../core/population_init.hpp"
+#include "../core/samplers/random_sampler.hpp"
 #include "../selection/selector.hpp"
-#include "../util/rand_util.hpp"
 
-/**
- * @brief Result of a single pass over a population evaluating every
- *        individual's fitness exactly once. Stores each individual's
- *        fitness (indexed the same as the population it was computed
- *        from) alongside the aggregates, so later steps (e.g. parent
- *        selection) can reuse it instead of calling eval_func_ again.
- */
+// Caches a population's per-individual fitnesses alongside the aggregates
+// so later steps (e.g. parent selection) can reuse them instead of calling
+// eval_func_ again.
 struct PopulationEval {
     std::vector<double> fitnesses;
     std::size_t best_index;
@@ -30,16 +21,13 @@ struct PopulationEval {
     double total_fitness;
 };
 
-/**
- * @brief Strategy interface for evolving a population from one generation
- *        to the next (e.g. selection, crossover, mutation policy).
- * @tparam T Gene type of the genomes being evolved.
- */
+// Strategy interface Evolver<T> delegates to for producing the next
+// generation from the current population (selection, crossover, mutation).
 template <typename T> class EvoPolicy {
 protected:
-    std::function<double(Genome<T>*)> eval_func_;
-    std::function<IndPtr<T>(const IndPtr<T>&, const IndPtr<T>&)> cross_func_;
-    std::function<IndPtr<T>(const IndPtr<T>&)> mut_func_;
+    std::function<double(const Genome<T>*)> eval_func_;
+    std::function<Genome<T>(const Genome<T>&, const Genome<T>&)> cross_func_;
+    std::function<Genome<T>(const Genome<T>&)> mut_func_;
     uint8_t crossover_prob_;
     uint8_t mutation_prob_;
 
@@ -54,40 +42,22 @@ protected:
 public:
     virtual ~EvoPolicy() = default;
 
-    /**
-     * @brief Sets the population create_init_population() will hand back,
-     *        moved in as-is.
-     * @param population Initial population to use; ownership is
-     *                    transferred into the policy.
-     */
     void set_init_population(PopulationVec<T> population) {
         this->init_population_ = std::move(population);
         this->has_init_population_ = true;
     }
 
-    /**
-     * @brief Configures create_init_population() to build a fresh
-     *        population of population_size genomes, each with genome_len
-     *        genes drawn uniformly from [lo, hi]. Whether that draw uses
-     *        an integer or real distribution is deduced from T (see
-     *        random_value in rand_util.hpp).
-     * @param population_size Number of individuals to generate.
-     * @param genome_len Number of genes per individual.
-     * @param lo Lower bound (inclusive) for each gene.
-     * @param hi Upper bound (inclusive) for each gene.
-     */
+    // Draws each gene uniformly from [lo, hi]; deduces an integer or real
+    // distribution from T (see RandomSampler in random_sampler.hpp).
     void set_random_init(std::size_t population_size, std::size_t genome_len, T lo, T hi) {
-        this->init_population_ = make_random_population<T>(
-            population_size, genome_len, [lo, hi]() { return random_value<T>(lo, hi); });
+        RandomSampler<T> sampler(lo, hi);
+        this->init_population_ =
+            generate_population<T>(InitPopSizeParams{population_size, genome_len}, sampler);
         this->has_init_population_ = true;
     }
 
-    /**
-     * @brief Hands back the population configured via
-     *        set_init_population() or set_random_init(); one of those
-     *        must have been called first.
-     * @return The initial population, moved out of the policy.
-     */
+    // Requires set_init_population() or set_random_init() to have been
+    // called first.
     PopulationVec<T> create_init_population() {
         assert(this->has_init_population_ && "EvoPolicy: call set_init_population() or "
                                              "set_random_init() before create_init_population()");
@@ -95,64 +65,28 @@ public:
         return std::move(this->init_population_);
     }
 
-    /**
-     * @brief Sets the fitness function used to score genomes.
-     * @param eval_func Fitness function used to score genomes.
-     */
-    void set_eval(std::function<double(Genome<T>*)> eval_func) { this->eval_func_ = eval_func; }
+    void set_eval(std::function<double(const Genome<T>*)> eval_func) {
+        this->eval_func_ = std::move(eval_func);
+    }
 
-    /**
-     * @brief Sets the crossover function and the probability with which it
-     *        is applied to two parent individuals during reproduction.
-     * @param cross_func Function applied to two parent individuals to
-     *                    produce a new offspring individual; decides
-     *                    itself which genes to combine and how.
-     * @param crossover_prob Probability threshold (0-255) for crossover.
-     */
-    void set_cross_func(std::function<IndPtr<T>(const IndPtr<T>&, const IndPtr<T>&)> cross_func,
+    void set_cross_func(std::function<Genome<T>(const Genome<T>&, const Genome<T>&)> cross_func,
                         uint8_t crossover_prob) {
-        this->cross_func_ = cross_func;
+        this->cross_func_ = std::move(cross_func);
         this->crossover_prob_ = crossover_prob;
     }
 
-    /**
-     * @brief Sets the mutation function and the probability with which it
-     *        is applied to an individual during reproduction.
-     * @param mut_func Function applied to a parent individual to produce
-     *                 a new, mutated offspring individual; decides itself
-     *                 which genes to change and how.
-     * @param mutation_prob Probability threshold (0-255) for mutation.
-     */
-    void set_mut_func(std::function<IndPtr<T>(const IndPtr<T>&)> mut_func, uint8_t mutation_prob) {
-        this->mut_func_ = mut_func;
+    void set_mut_func(std::function<Genome<T>(const Genome<T>&)> mut_func, uint8_t mutation_prob) {
+        this->mut_func_ = std::move(mut_func);
         this->mutation_prob_ = mutation_prob;
     }
 
-    /**
-     * @brief Sets the parent-selection strategy used by
-     *        create_new_population().
-     * @param selector Selector to pick parents with; must outlive every
-     *                 create_new_population() call made on this policy.
-     */
+    // selector must outlive every create_new_population() call made on
+    // this policy.
     void set_selector(Selector<PopulationEval>* selector) { this->selector_ = selector; }
 
-    /**
-     * @brief Produces the next generation from the current population.
-     * @param population Current generation of genomes.
-     * @param eval Fitnesses of population, as computed by evaluate();
-     *             reused for parent selection instead of re-evaluating.
-     * @return The new, owned population for the next generation.
-     */
     virtual PopulationVec<T> create_new_population(const PopulationVec<T>& population,
                                                    const PopulationEval& eval) = 0;
 
-    /**
-     * @brief Evaluates every individual in a population exactly once,
-     *        collecting every individual's fitness, the fittest
-     *        individual's index/fitness, and the population's total
-     *        fitness in a single pass.
-     * @param population Population to evaluate; must be non-empty.
-     * @return The per-individual fitnesses and aggregates found.
-     */
+    // population must be non-empty.
     virtual PopulationEval evaluate(const PopulationVec<T>& population) = 0;
 };

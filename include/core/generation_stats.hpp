@@ -1,19 +1,11 @@
-/**
- * @file generation_stats.hpp
- * @brief Defines GenerationStats<T>, a snapshot of a single generation
- *        passed to Evolver<T>'s callback and produced by EvoPolicy<T>.
- */
-
 #pragma once
 
 #include <vector>
 
 #include "core/genome.hpp"
 
-/**
- * @brief Snapshot of a single generation's evolution results.
- * @tparam T Gene type of the genomes being evolved.
- */
+// Snapshot of a single generation's evolution results, reported to every
+// Callback after evaluation.
 template <typename T> struct GenerationStats {
     int generation;
     const PopulationVec<T>& population;
