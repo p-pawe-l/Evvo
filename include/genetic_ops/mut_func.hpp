@@ -1,33 +1,48 @@
 #pragma once
 
 #include <algorithm>
-#include <random>
 
-#include "core/genome.hpp"
-#include "util/rand_util.hpp"
+#include "../core/genome.hpp"
+#include "../util/rand_util.hpp"
 
-template <typename T> Genome<T> mutate_gaussian(const Genome<T>& individual) {
-    static std::random_device rd;
-    static std::mt19937 gen(rd());
-    static std::normal_distribution<double> noise(0.0, 0.1);
+// Add to each gene noise provided by gaussian distribution
+// Mean of the distribution is equal to gene value,
+// but standard deviation is provided by user. Higher 
+// std dev means more probability of having more various individual
+// than the previous one.
+template <typename T, double std_dev> 
+Genome<T> mutate_gaussian(const Genome<T>& individual) {
     Genome<T> offspring = individual;
-    std::ranges::for_each(offspring, [](T& gene) { gene += noise(gen); });
+    std::ranges::for_each(offspring, [](T& gene) { 
+            gene += random_gaussian(gene, std_dev); 
+    });
     return offspring;
 }
 
-template <typename T> Genome<T> mutate_random_reset(const Genome<T>& individual) {
+// Just adds a random number to 'kgene; number of genes.
+template <typename T, std::size_t kgenes = 1, double low, double high>
+Genome<T> mutate_by_random(const Genome<T>& individual) {
     Genome<T> offspring = individual;
     if (offspring.empty()) {
         return offspring;
     }
-    int i = static_cast<int>(random_double(0.0, offspring.size()));
-    offspring[i] = static_cast<T>(random_double(-1.0, 1.0));
+    for (std::size_t i = 0; i < kgenes; ++i) {
+        auto k = static_cast<int>(random_double(0.0, offspring.size()));
+        offspring[k] += static_cast<T>(random_double(low, high));
+    }
     return offspring;
 }
 
-template <typename T> Genome<T> mutate_boundary(const Genome<T>& individual) {
+// Replace value in genome with random one. Performed for kgenes number of genes.
+template <typename T, std::size_t kgenes = 1, double lo, double hi>
+Genome<T> mutate_random_reset(const Genome<T>& individual) {
     Genome<T> offspring = individual;
-    std::ranges::generate(
-        offspring, [] { return static_cast<T>((random_double(0.0, 1.0) < 0.5) ? -1.0 : 1.0); });
+    if (offspring.empty()) {
+        return offspring;
+    }
+    for (std::size_t i = 0; i < kgenes; ++i) {
+        int k = static_cast<int>(random_double(0.0, offspring.size()));
+        offspring[k] = static_cast<T>(random_double(lo, hi));
+    }
     return offspring;
 }
