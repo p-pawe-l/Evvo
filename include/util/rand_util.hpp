@@ -1,19 +1,10 @@
-/**
- * @file rand_util.hpp
- * @brief Small random-number helper shared by mut_func.hpp and
- *        cross_func.hpp.
- */
-
 #pragma once
 
 #include <random>
 #include <type_traits>
 
 namespace {
-/**
- * @brief Generates a uniformly distributed random value in [lo, hi].
- * @return A random double in [lo, hi].
- */
+
 double random_double(double lo, double hi) {
     static std::random_device rd;
     static std::mt19937 gen(rd());
@@ -21,16 +12,15 @@ double random_double(double lo, double hi) {
     return dist(gen);
 }
 
-/**
- * @brief Generates a uniformly distributed random value in [lo, hi],
- *        picking std::uniform_int_distribution or
- *        std::uniform_real_distribution based on whether T is an
- *        integral type.
- * @tparam T Value type to generate; must be an arithmetic type.
- * @param lo Lower bound (inclusive).
- * @param hi Upper bound (inclusive).
- * @return A random value of type T in [lo, hi].
- */
+double random_gaussian(double mean, double std_dev) {
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    std::normal_distribution<double> dist(mean, std_dev);
+    return dist(gen);
+}
+
+// Picks std::uniform_int_distribution or std::uniform_real_distribution
+// based on whether T is an integral type.
 template <typename T> T random_value(T lo, T hi) {
     static std::random_device rd;
     static std::mt19937 gen(rd());
@@ -42,4 +32,5 @@ template <typename T> T random_value(T lo, T hi) {
         return dist(gen);
     }
 }
+
 } // namespace

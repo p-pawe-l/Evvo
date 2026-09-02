@@ -1,22 +1,21 @@
-/**
- * @file callback.hpp
- * @brief Defines Callback<T>, a generic interface for reacting to an
- *        object of type T (e.g. invoked once per generation by Evolver).
- */
-
 #pragma once
 
-/**
- * @brief Generic callback interface invoked with an object of type T.
- * @tparam T Type of the object passed to call.
- */
+#include "../core/generation_stats.hpp"
+#include "../core/genome.hpp"
+
+// Hook interface invoked around and during an Evolver<T> run, subclassed
+// directly by every concrete callback.
 template <typename T> class Callback {
 public:
     virtual ~Callback() = default;
 
-    /**
-     * @brief Invoked with an object of type T.
-     * @param obj Object to react to.
-     */
-    virtual void call(const T& obj) = 0;
+    virtual void call(const GenerationStats<T>& stats) = 0;
+
+    virtual void pre_run_call() {}
+
+    virtual void post_run_call(const Genome<T>& run_champion) {}
+
+    // Polled by Evolver<T>::evolve() right after call(); if any callback
+    // returns true, the run stops before producing the next generation.
+    [[nodiscard]] virtual bool should_stop() const { return false; }
 };

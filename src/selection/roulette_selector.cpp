@@ -6,8 +6,7 @@ void RouletteSelector::build_from_eval(const PopulationEval& eval) {
     fitnesses_ = &eval.fitnesses;
 }
 
-std::size_t RouletteSelector::pick() const 
-{
+std::size_t RouletteSelector::pick() const {
     auto rand_val = random_value<double>(0.0, total_fitness_);
     std::size_t n = fitnesses_->size();
     double offset = 0.0;
