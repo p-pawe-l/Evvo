@@ -50,6 +50,7 @@ namespace evvo::fitness::tactics {
 
 namespace evvo::fitness {
 
+    // Informs whether first fitness is better than second one.
     template <typename Tactics> 
         requires std::is_default_constructible_v<Tactics> &&
                  std::is_invocable_r_v<bool, Tactics, double, double>
