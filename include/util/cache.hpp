@@ -1,10 +1,10 @@
 #pragma once 
 
-#include <stdexcept>
 #include <unordered_map>
-#include <algorithm>
 #include <memory>
 #include <mutex>
+#include <functional>
+#include <list>
 
 namespace evvo::cache {
 
@@ -18,20 +18,64 @@ namespace evvo::cache {
     class fixed_size_cache {
     public:
         using map_t = HashMap;
-        using ops_thread_guard = typename std::lock_guard<std::mutex>;
-    
-        enum class cache_op_codes: std::int8_t {
+        using list_t = std::list<Key>; // Double-linked list
+        using ops_thread_guard = std::lock_guard<std::mutex>;
+        using on_miss_cb = std::function<void(const Key& k, const Value& v)>;
+        using on_erase_cb = std::function<void(const Key& k, const Value& v)>;
+
+        using const_iter = typename map_t::const_iterator; 
+
+        enum class cache_op_code: std::int8_t {
             SUCCESS = 0,
+            EMPTY,
             INVALID_CAPACITY_SIZE,
             INVALID_KEY, 
         };
 
     private:
         std::size_t cap_;
-        map_t map_;
+        map_t cache_map_;
+        list_t cache_freq_list_;
         ops_thread_guard thread_guard_;
+        std::mutex op_lock_;
 
-        cache_op_codes remove();
+        // Removes least-used element in the cache
+        cache_op_code remove() noexcept {
+            const ops_thread_guard lock(op_lock_);
+            if (cache_freq_list_.size() == 0) {
+                return cache_op_code::EMPTY;
+            }
+
+            auto back_key = cache_freq_list_.back();
+            if (auto res = map_erase(std::move(back_key) != cache_op_code::SUCCESS)) {
+                return res;
+            }
+            // Removing element only after 
+            // element from the map 
+            // was deleted
+            cache_freq_list_.pop_back();
+                
+            return cache_op_code::SUCCESS;
+        }
+
+        // Removes element from the cache map
+        cache_op_code map_erase(Key&& k) {
+            try {
+                cache_map_.erase(k);
+                return cache_op_code::SUCCESS;
+            } catch (const std::exception& e) {
+                return cache_op_code::INVALID_KEY;
+            }
+        }
+
+    protected:
+        const_iter begin() {
+            return cache_map_.begin();
+        }
+
+        const_iter end() {
+            return cache_map_.end();
+        }
 
     public:
         explicit fixed_size_cache(std::size_t cap);
