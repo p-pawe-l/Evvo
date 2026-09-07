@@ -1,47 +1,39 @@
 #pragma once 
 
+#include <stdexcept>
 #include <unordered_map>
 #include <algorithm>
+#include <memory>
+#include <mutex>
 
-template <typename T>
-struct CacheEntry {
-    T data;
-    std::size_t counter_ = 0;
-};
+namespace evvo::cache {
 
-template <typename Key, typename Value> 
-class Cache {
-private:
-    std::size_t cap_;
-    std::unordered_map<Key, CacheEntry<Value>> hash_map_;
+    template <typename Value>
+    using ShrWrappedValue = std::shared_ptr<Value>;
 
-    void remove_min_counter() {
-        auto min_item = std::ranges::min(
-            hash_map_,
-            [](const std::pair<Key, CacheEntry<Value>> item) {
-                return item.second.counter_;
-            }
-        );
-        hash_map_.erase(std::move(min_item.second));
-    } 
+    template <typename Key, 
+              typename Value, 
+              typename HashMap = std::unordered_map<Key, ShrWrappedValue<Value>>
+    >
+    class fixed_size_cache {
+    public:
+        using map_t = HashMap;
+        using ops_thread_guard = typename std::lock_guard<std::mutex>;
+    
+        enum class cache_op_codes: std::int8_t {
+            SUCCESS = 0,
+            INVALID_CAPACITY_SIZE,
+            INVALID_KEY, 
+        };
 
-public:
-    Cache() = delete;
-    explicit Cache(std::size_t cap): cap_{cap} {}
+    private:
+        std::size_t cap_;
+        map_t map_;
+        ops_thread_guard thread_guard_;
 
-    Value get(Key key) {
-        auto& kval = hash_map_.at(std::move(key));
-        kval.counter_++;
-        return kval;
-    }
+        cache_op_codes remove();
 
-    void put(const Key& key, const Value& val) {
-        if (hash_map_.size() == cap_) { remove_min_counter(); }
-        hash_map_.insert({key, CacheEntry<Value>{val, 0}});    
-    }
-
-    void put(const Key& key, Value&& val) {
-        if (hash_map_.size() == cap_) { remove_min_counter(); }
-        hash_map_.insert({key, CacheEntry<Value>{val, 0}});
-    }
-};
+    public:
+        explicit fixed_size_cache(std::size_t cap);
+    };
+}
