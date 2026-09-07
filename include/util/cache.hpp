@@ -29,17 +29,19 @@ public:
     Cache() = delete;
     explicit Cache(std::size_t cap): cap_{cap} {}
 
-    Value get(Key key) const {
-        return hash_map_.at(key);
+    Value get(Key key) {
+        auto& kval = hash_map_.at(std::move(key));
+        kval.counter_++;
+        return kval;
     }
 
     void put(const Key& key, const Value& val) {
         if (hash_map_.size() == cap_) { remove_min_counter(); }
-        hash_map_.insert({key, val});    
+        hash_map_.insert({key, CacheEntry<Value>{val, 0}});    
     }
 
     void put(const Key& key, Value&& val) {
         if (hash_map_.size() == cap_) { remove_min_counter(); }
-        hash_map_.insert({key, val});
+        hash_map_.insert({key, CacheEntry<Value>{val, 0}});
     }
 };
