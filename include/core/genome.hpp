@@ -3,39 +3,35 @@
 #include <cstddef>
 #include <type_traits>
 #include <vector>
-#include <algorithm>
-#include <utility>
 
 namespace evvo::genome {
     
     template <typename T> 
     using Genome = std::vector<T>;
 
-    template <typename genT, typename Generator> requires std::is_arithmetic_v<genT>
-    Genome<genT> make_genome(const std::size_t len, Generator&& gene_gen) {
-        Genome<genT> genome;
+    template <typename T, typename Generator> requires std::is_arithmetic_v<T>
+    Genome<T> make_genome(const std::size_t len, Generator&& gene_gen) {
+        Genome<T> genome;
         genome.reserve(len);
-        std::ranges::for_each_n(genome.begin(), len, [&gene_gen](genT&& ele) {
-            ele = gene_gen();
-        });
+        for (std::size_t i = 0; i < len; ++i) { genome.push_back(gene_gen()); }
         return genome;
     }
 
-    template <typename genT>
-    using Population = std::vector<Genome<genT>>;
+    template <typename T>
+    using Population = std::vector<Genome<T>>;
 
-    struct population_meta {
+    struct PopulationMeta {
         std::size_t population_size;
         std::size_t genome_size;
     };
 
-    template <typename genT, typename Generator> requires std::is_arithmetic_v<genT>
-    Population<genT> make_population(const population_meta& arg, Generator&& gene_gen) {
-        Population<genT> population;
+    template <typename T, typename Generator> requires std::is_arithmetic_v<T>
+    Population<T> make_population(const PopulationMeta& arg, Generator&& gene_gen) {
+        Population<T> population;
         population.reserve(arg.population_size);
-        std::ranges::for_each(population.begin(), arg.population_size, [&gene_gen, &arg](Genome<genT>& ele) {
-            ele = std::move(make_genome(arg.genome_size, gene_gen));
-        });
+        for (std::size_t i = 0; i < arg.population_size; ++i) {
+            population.push_back(make_genome<T>(arg.genome_size, gene_gen));
+        }
         return population;
     }
 }
