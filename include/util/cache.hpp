@@ -28,6 +28,7 @@ namespace evvo::cache {
         enum class cache_op_code: std::int8_t {
             SUCCESS = 0,
             EMPTY,
+            FULL,
             INVALID_CAPACITY_SIZE,
             INVALID_KEY, 
         };
@@ -87,5 +88,40 @@ namespace evvo::cache {
 
     public:
         explicit fixed_size_cache(std::size_t cap);
+
+        Value get(Key key) {
+            const ops_thread_guard lock(op_lock_);
+                     
+            auto iter = std::ranges::find(cache_freq_list_, std::move(key));
+            if (iter != cache_freq_list_.end()) {
+                cache_freq_list_.splice(
+                        cache_freq_list_.begin(),
+                        cache_freq_list_,
+                        iter
+                );
+            } else {
+                on_miss_cb(std::move(key));
+                return;
+            }
+            return iter->get();
+        }
+
+        cache_op_code put(Key key, Value&& val) {
+            const ops_thread_guard lock(op_lock_);
+            if (cache_freq_list_.size() == cap_) {
+                return cache_op_code::FULL;
+            }
+            
+            auto iter = std::ranges::find(cache_freq_list_, key);
+            if (iter == cache_freq_list_.end()) {
+                cache_freq_list_.push_front(val);
+            } else {
+                return cache_op_code::INVALID_KEY;
+            }
+            
+            insert_into_map(std::move(key), std::move(val));
+            return cache_op_code::SUCCESS;
+        }
+        
     };
 }
