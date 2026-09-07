@@ -39,6 +39,9 @@ namespace evvo::cache {
         ops_thread_guard thread_guard_;
         std::mutex op_lock_;
 
+        on_erase_cb erase_cb_ = [](const Key& k, const Value& v) { return; };
+        on_miss_cb miss_cb_ = [](const Key&k, const Value& v) { return; };
+
         // Removes least-used element in the cache
         cache_op_code remove() noexcept {
             const ops_thread_guard lock(op_lock_);
@@ -47,6 +50,11 @@ namespace evvo::cache {
             }
 
             auto back_key = cache_freq_list_.back();
+            try {
+                erase_cb(back_key, cache_map_.at(back_key).get()); 
+            } catch (const std::exception& e) {
+                return cache_op_code::ERASE_CALLBACK_FAILURE;
+            }
             if (auto res = map_erase(std::move(back_key) != cache_op_code::SUCCESS)) {
                 return res;
             }
