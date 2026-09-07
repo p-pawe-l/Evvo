@@ -11,14 +11,43 @@
 #include "../core/samplers/random_sampler.hpp"
 #include "../selection/selector.hpp"
 
+struct EvalVectorEntry {
+    double fitness;
+    std::size_t org_index;
+}; 
+
+struct genome_entry {
+    std::size_t genome_id_;
+    std::size_t in_pop_index_;
+    double fitness_;
+};
+
 // Caches a population's per-individual fitnesses alongside the aggregates
 // so later steps (e.g. parent selection) can reuse them instead of calling
 // eval_func_ again.
 struct PopulationEval {
-    std::vector<double> fitnesses;
+private:
+    std::vector<EvalVectorEntry> fitnesses;
     std::size_t best_index;
     double best_fitness;
     double total_fitness;
+
+public:
+    PopulationEval(std::size_t pop_size):
+    best_fitness{evvo::fitness::init_fitness()},
+    {
+        // Reserve memory at construction time
+        fitnesses.reserve(pop_size);
+    }
+
+    void update(const genome_entry& data) {
+        if (evvo::fitness::is_better(best_fitness, data.fitness_)) {
+            best_index = data.in_pop_index_;
+            best_fitness = data.fitness_;
+        }
+        total_fitness += data.fitness_;
+        fitnesses.emplace_back(data.fitness_, data.in_pop_index_);
+    }       
 };
 
 // Strategy interface Evolver<T> delegates to for producing the next
