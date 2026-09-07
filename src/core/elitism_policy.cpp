@@ -4,9 +4,7 @@
 #include <algorithm>
 #include <ranges>
 
-ElitismPolicy::ElitismPolicy(const std::size_t elite_count):
-    elite_count_{elite_count}
-{}
+ElitismPolicy::ElitismPolicy(std::size_t elite_count): elite_count_{elite_count}, elite_cache_(elite_count_) {}
 
 void ElitismPolicy::set_elite_count(const std::size_t elite_count) {
     if (elite_count <= 0) {
@@ -28,16 +26,36 @@ void ElitismPolicy::copy_elites(const PopulationVec<double>& prev, const Populat
     }
     
     // Maybe better solution than just copying copy-demanding vector ?
-    std::vector<EvalVectorEntry> eval_fitnesses_copy = eval.fitnesses;
+    auto eval_fitnesses_view = eval.fitnesses | std::views::take(eval.fitnesses.size());
     std::ranges::sort(
-            eval_fitnesses_copy,
-            std::ranges::greater{},
-            &EvalVectorEntry::fitness
+        eval_fitnesses_view,
+        std::ranges::greater{}, 
+        &EvalVectorEntry::fitness
     );
 
-    for (const EvalVectorEntry& x : eval_fitnesses_copy | std::views::take(elite_count_)) {
+    for (const EvalVectorEntry& x : eval_fitnesses_view | std::views::take(elite_count_)) {
         new_pop.push_back(prev[x.org_index]);
     }
+}
+
+PopulationVec<double> ElitismPolicy::create_new_population(const PopulationVec<double>& prev, const PopulationEval& eval) { 
+}
+
+PopulationEval ElitismPolicy::evaluate(const PopulationVec<double>& population) {
+    PopulationEval eval(population.size());
+    
+    for (const auto& ind : population) {
+        auto genome_id = evvo::genome::registry::getid(ind);
+
+        std::optional<genome_entry> cached_val = elite_cache_.get(evvo::genome::registry::getid(ind));
+        double ind_fitness;
+        if (cached_val) { ind_fitness = cached_val.value() } 
+        else { ind_fitness = eval_func_(ind); }
+    
+        eval.update({genome_id, ind_fitness});
+    }
+
+    return eval;
 }
 
 
