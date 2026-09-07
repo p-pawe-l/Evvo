@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <type_traits>
+#include <concepts>
 
 namespace evvo::fitness::tactics {
     struct higher_better {
@@ -48,12 +49,19 @@ namespace evvo::fitness::tactics {
     };
 }
 
+namespace evvo::fitness::tactics::concepts {
+    template <typename T>
+    concept FitnessTactic = requires(const T& tactic, double a, double b) {
+        { tactic(a, b) } -> std::same_as<bool>;
+        { tactic.get_worst_fit() } -> std::same_as<double>;
+    };
+}
+
 namespace evvo::fitness {
 
     // Informs whether first fitness is better than second one.
-    template <typename Tactics> 
-        requires std::is_default_constructible_v<Tactics> &&
-                 std::is_invocable_r_v<bool, Tactics, double, double>
+    template <tactics::concepts::FitnessTactic Tactics> 
+        requires std::default_initializable<Tactics>
     constexpr bool is_better(const double first, const double second) {
         return Tactics{}(first, second);
     }
