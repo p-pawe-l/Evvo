@@ -1,29 +1,76 @@
 #pragma once
 
-#include <cstdint>
 #include <utility>
+#include <type_traits>
 
-#include "core/evo_policy.hpp"
-#include "core/genome.hpp"
+#include "evo_policy.hpp"
 
-// Default EvoPolicy<double>: selects parents via whatever
-// Selector<PopulationEval> is configured, applies crossover/mutation.
-class StdPolicy : public EvoPolicy<double> {
-private:
-    // selector_->build_from_eval() must already have been called for this
-    // generation. Returned pointers stay valid only as long as population
-    // is alive.
-    std::pair<const Genome<double>*, const Genome<double>*>
-    choose_parents(const PopulationVec<double>& population);
+#include "../core/genome.hpp"
+#include "../core/fitness.hpp"
+#include "../util/rand_util.hpp"
 
-    static bool roll(uint8_t prob);
+namespace evvo::policy {
+template <typename T,
+          typename EvalT,
+          evvo::fitness::tactics::concepts::FitnessTactic Tactics = evvo::fitness::tactics::higher_better
+> requires std::is_default_constructible_v<Tactics>
+class StdPolicy : public AbstractEvoPolicy<T, EvalT, Tactics> {
+    using parents = std::pair<
+        const evvo::genome::Genome<T>*,
+        const evvo::genome::Genome<T>*
+    >;
+
+    using f32 = float;
+
+private:    
+    parents choose_parents(const evvo::genome::Population<T>& population) const {
+        // Selector class here handles picking parents from population
+        // by given selector policy
+        return {
+            &population[this->selector_->pick()], // first parent
+            &population[this->selector_->pick()]  // second parent
+        };
+    }
 
 public:
-    StdPolicy() = default;
+    explicit StdPolicy(evvo::policy::Probabilities probs):
+        evvo::policy::AbstractEvoPolicy<T, EvalT, Tactics>(std::move(probs)) {}
     ~StdPolicy() override = default;
 
-    PopulationVec<double> create_new_population(const PopulationVec<double>& prev,
-                                                const PopulationEval& eval) override;
+    evvo::genome::Population<T> create_new_population(
+        const evvo::genome::Population<T>& prev,
+        const evvo::eval::PopulationEval<Tactics>& eval
+    ) override {
+        evvo::genome::Population<T> new_population;
+        this->selector_->build_from_eval(eval);
+        
+        while (new_population.size() != prev.size()) {
+            parents pair = choose_parents(prev);
+            evvo::genome::Genome<T> offspring = pair.first;
+            if (random_value<f32>(0.00, 1.00) < this->crossover_chance_) {
+                offspring = this->crossover_func_(*(pair.first), *(pair.second));
+            }
+            if (random_value<f32>(0.00, 1.00) < this->mutation_chance_) {
+                offspring = this->mutating_func_(offspring);
+            }
+            new_population.push_back(std::move(offspring));
+        }
+        return new_population;
+    } 
 
-    PopulationEval evaluate(const PopulationVec<double>& population) override;
+    evvo::eval::PopulationEval<Tactics> evaluate(
+        const evvo::genome::Population<T>& population
+    ) override {
+        evvo::eval::PopulationEval<Tactics> population_eval; 
+        for (std::size_t i = 0; i < population.size(); ++i) {
+            evvo::eval::GenomeEntry entry = {
+                .id = evvo::genome::get_current_id(), // somehow this should be implemented to give each genome an unique id
+                .population_index = i,
+                .fitness = this->evaluation_(population[i])
+            }
+            population_eval.update(std::move(entry));
+        }
+        return population_eval;
+    }
 };
+}
