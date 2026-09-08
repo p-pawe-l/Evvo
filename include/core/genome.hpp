@@ -19,7 +19,6 @@ namespace evvo::genome {
 
     template <typename T>
     using Population = std::vector<Genome<T>>;
-
     struct PopulationMeta {
         std::size_t population_size;
         std::size_t genome_size;

@@ -22,6 +22,15 @@ struct genome_entry {
     double fitness_;
 };
 
+namespace evvo::fitness {
+    double init_fitness();
+    bool is_better(double f1, double f2);
+}
+namespace evvo::genome::registry {
+    std::size_t getnewid();
+}
+
+
 // Caches a population's per-individual fitnesses alongside the aggregates
 // so later steps (e.g. parent selection) can reuse them instead of calling
 // eval_func_ again.
@@ -33,21 +42,35 @@ private:
     double total_fitness;
 
 public:
-    PopulationEval(std::size_t pop_size):
-    best_fitness{evvo::fitness::init_fitness()},
-    {
+    struct genome_entry {
+        std::size_t id = evvo::genome::registry::getnewid();
+        std::size_t in_pop_index;
+        double fitness;
+    };
+
+    explicit PopulationEval(std::size_t pop_size):
+    best_fitness{evvo::fitness::init_fitness()} {
         // Reserve memory at construction time
         fitnesses.reserve(pop_size);
     }
 
     void update(const genome_entry& data) {
-        if (evvo::fitness::is_better(best_fitness, data.fitness_)) {
-            best_index = data.in_pop_index_;
-            best_fitness = data.fitness_;
+        if (evvo::fitness::is_better(best_fitness, data.fitness)) {
+            best_index = data.in_pop_index;
+            best_fitness = data.fitness;
         }
-        total_fitness += data.fitness_;
-        fitnesses.emplace_back(data.fitness_, data.in_pop_index_);
+        total_fitness += data.fitness;
+        fitnesses.emplace_back(data.fitness, data.in_pop_index);
     }       
+
+    std::vector<EvalVectorEntry>::iterator begin() {
+        return fitnesses.begin();
+    }
+
+    std::vector<EvalVectorEntry>::iterator end() {
+        return fitnesses.end();
+    }
+    
 };
 
 // Strategy interface Evolver<T> delegates to for producing the next

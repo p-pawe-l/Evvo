@@ -47,7 +47,7 @@ PopulationEval ElitismPolicy::evaluate(const PopulationVec<double>& population) 
     for (const auto& ind : population) {
         auto genome_id = evvo::genome::registry::getid(ind);
 
-        std::optional<genome_entry> cached_val = elite_cache_.get(evvo::genome::registry::getid(ind));
+        std::optional<genome_entry> cached_val = elite_cache_.get(genome_id);
         double ind_fitness;
         if (cached_val) { ind_fitness = cached_val.value() } 
         else { ind_fitness = eval_func_(ind); }
