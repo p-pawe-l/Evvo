@@ -39,6 +39,8 @@ protected:
     f32 mutation_chance_ = 0.0;
 
 public:
+    virtual ~AbstractEvoPolicy() = default;
+
     void set_crossover_func(crossover_func crossover) final {
         if (crossover == nullptr) {
             throw std::invalid_argument("Provided crossover function cannot be nullptr");

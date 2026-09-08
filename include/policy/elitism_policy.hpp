@@ -1,44 +1,50 @@
 #pragma once
 
-#include <cstddef>
-#include <cstdint>
+#include <type_traits>
+#include <utility>
 
-#include "../core/evo_policy.hpp"
+#include "evo_policy.hpp"
+
+#include "../core/fitness.hpp"
 #include "../core/genome.hpp"
+#include "../core/eval.hpp"
 #include "../util/cache.hpp"
 
-// EvoPolicy<double> that carries the elite_count_ fittest individuals of
-// each generation forward unchanged, then fills the rest of the new
-// population the same way StdPolicy does (selection, crossover, mutation).
-// Prototype: not yet wired into Evolver.
-class ElitismPolicy : public EvoPolicy<double> {
+namespace evvo::policy {
+
+template <typename T,
+          typename EvalT,
+          evvo::fitness::tactics::concepts::FitnessTactic Tactics = evvo::fitness::tactics::higher_better
+>
+    requires std::is_default_constructible_v<Tactics>
+class ElitismPolicy : public AbstractEvoPolicy<T, EvalT, Tactics> {
+    using parents = std::pair<
+        const evvo::genome::Genome<T>*,
+        const evvo::genome::Genome<T>*
+    >;
+
 private:
     std::size_t elite_count_;
-    evvo::cache::fixed_size_cache<std::size_t, Genome<double>> elite_cache_;
+    evvo::cache::fixed_size_cache<
+        std::size_t, 
+        evvo::genome::Genome<T>
+    > elite_cache_;
 
-    // selector_->build_from_eval() must already have been called for this
-    // generation. Returned pointers stay valid only as long as population
-    // is alive.
-    std::pair<const Genome<double>*, const Genome<double>*>
-    choose_parents(const PopulationVec<double>& population);
+    parents choose_parents(const evvo::genome::Population<T>& population);
 
-    // Appends the elite_count_ fittest individuals of prev (ranked via
-    // eval.fitnesses) to new_pop.
-    void copy_elites(const PopulationVec<double>& prev, const PopulationEval& eval,
-                     PopulationVec<double>& new_pop);
-
-    static bool roll(uint8_t prob);
+    void copy_elites(const evvo::genome::Population<T>& prev, 
+                     const evvo::eval::PopulationEval<Tactics>& eval, 
+                     evvo::genome::Population<double>& new_pop);
 
 public:
     explicit ElitismPolicy(std::size_t elite_count);
     ~ElitismPolicy() override = default;
 
-    // elite_count must be less than the population size passed to
-    // create_new_population().
     void set_elite_count(std::size_t elite_count);
 
-    PopulationVec<double> create_new_population(const PopulationVec<double>& prev,
-                                                const PopulationEval& eval) override;
+    evvo::genome::Population<T> create_new_population(const evvo::genome::Population<T>& prev,
+                                                      const evvo::eval::PopulationEval<Tactics>& eval) override;
 
-    PopulationEval evaluate(const PopulationVec<double>& population) override;
+    evvo::eval::PopulationEval<Tactics> evaluate(const evvo::genome::Population<T>& population) override;
 };
+}
