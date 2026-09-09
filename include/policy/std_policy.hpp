@@ -64,10 +64,10 @@ public:
         evvo::eval::PopulationEval<Tactics> population_eval; 
         for (std::size_t i = 0; i < population.size(); ++i) {
             evvo::eval::GenomeEntry entry = {
-                .id = evvo::genome::get_current_id(), // somehow this should be implemented to give each genome an unique id
+                .id = this->gen_id_.allocate_id(),
                 .population_index = i,
                 .fitness = this->evaluation_(population[i])
-            }
+            };
             population_eval.update(std::move(entry));
         }
         return population_eval;

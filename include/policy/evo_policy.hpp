@@ -5,13 +5,21 @@
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
+#include <memory>
 
 #include "../core/genome.hpp"
 #include "../core/fitness.hpp"
 #include "../core/eval.hpp"
+#include "../selection/selector.hpp"
 
 namespace evvo::policy {
 
+struct Probabilities {
+    using f32 = float;
+
+    f32 crossover;
+    f32 mutation;
+};
 
 template <typename T,
           typename EvalT = double,
@@ -30,15 +38,21 @@ class AbstractEvoPolicy {
 
     using f32 = float;
 
+    using selector = std::unique_ptr<Selector<evvo::eval::PopulationEval<Tactics>>>;
+    using id_gen = evvo::genome::GenomeIdGenerator;
+
 protected:
     eval_func evaluation_ = nullptr;
     crossover_func crossover_func_ = nullptr;
     mutating_func mutating_func_ = nullptr;
+    selector selector_;
+    id_gen gen_id_;
 
     f32 crossover_chance_ = 0.0;
     f32 mutation_chance_ = 0.0;
 
 public:
+    explicit AbstractEvoPolicy(Probabilities&& probs);
     virtual ~AbstractEvoPolicy() = default;
 
     void set_crossover_func(crossover_func crossover) final {
