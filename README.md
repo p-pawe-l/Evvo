@@ -31,14 +31,20 @@ type `T` (e.g. plain `double`s, or a custom struct of parameters).
   Free functions of the form
   `Genome<T> crossover_x(const Genome<T>& parent1, const Genome<T>& parent2)`
   that return a new offspring combining both parents. Includes
-  `crossover_single_point`, `crossover_uniform`, `crossover_arithmetic`.
+  `crossover_single_point`, `crossover_arithmetic`. `crossover_uniform<T,
+  cross_chance>` also takes a non-type template parameter for the
+  per-gene swap probability (e.g. `crossover_uniform<double, 0.45>`),
+  fixed at compile time so it drops straight into the same
+  `Genome<T>(*)(const Genome<T>&, const Genome<T>&)` slot as the others.
 
 - **`population_init.hpp` — `generate_population<T>()`, `Sampler<T>`**
   Builds a `PopulationVec<T>` of `population_size` genomes, each with
   `genome_len` genes, produced by calling a caller-supplied `Sampler<T>`
   once per gene (`RandomSampler<T>` for a uniform range, `ValueSampler<T>`
-  for a fixed value — see `core/samplers/`). `EvoPolicy<T>::set_random_init()`
-  uses this internally with a `RandomSampler<T>`, so in the common case you
+  for a fixed value, `GaussianSampler<T>` for a normal distribution given a
+  mean and standard deviation — see `core/samplers/`).
+  `EvoPolicy<T>::set_random_init()` uses this internally with a
+  `RandomSampler<T>`, so in the common case you
   never need to call it directly.
 
 - **`evo_policy.hpp` — `EvoPolicy<T>`, `PopulationEval<T>`**
@@ -154,9 +160,9 @@ double target(double x) {
 }
 
 double eval_quadratic_fit(const Genome<double>* genome) {
-    double a = genome->data()[0];
-    double b = genome->data()[1];
-    double c = genome->data()[2];
+    double a = (*genome)[0];
+    double b = (*genome)[1];
+    double c = (*genome)[2];
 
     double squared_error = 0.0;
     for (double x : {-5.0, -2.5, -1.0, 0.0, 1.0, 2.5, 5.0}) {
@@ -184,8 +190,7 @@ int main() {
 
     Genome<double> best = evolver.evolve(200, eval_quadratic_fit);
 
-    std::printf("best fit: %.4fx^2 + %.4fx + %.4f\n",
-        best.data()[0], best.data()[1], best.data()[2]);
+    std::printf("best fit: %.4fx^2 + %.4fx + %.4f\n", best[0], best[1], best[2]);
 }
 ```
 

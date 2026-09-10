@@ -1,30 +1,49 @@
 #pragma once
 
+#include <atomic>
 #include <cstddef>
+#include <type_traits>
 #include <vector>
 
-// Plain std::vector<T> under the alias — deep copy, move, initializer-list
-// construction, .data()/.size() are already exactly what's needed, so
-// there's nothing for a wrapper class to add.
-template <typename T> using Genome = std::vector<T>;
+namespace evvo::genome {
+    
+template <typename T> 
+using Genome = std::vector<T>;
 
-// Each individual is a Genome<T> stored by value, moved rather than
-// heap-allocated per individual (see docs/adr/0001-genome-by-value.md).
-template <typename T> using PopulationVec = std::vector<Genome<T>>;
-
-template <typename T, typename Generator>
-Genome<T> make_genome(const std::size_t len, Generator gene_gen) {
-    Genome<T> genome(len);
-    for (std::size_t i = 0; i < len; ++i) {
-        genome[i] = gene_gen();
-    }
+template <typename T, typename Generator> requires std::is_arithmetic_v<T>
+Genome<T> make_genome(const std::size_t len, Generator&& gene_gen) {
+    Genome<T> genome;
+    genome.reserve(len);
+    for (std::size_t i = 0; i < len; ++i) { genome.push_back(gene_gen()); }
     return genome;
 }
 
-template <typename T> Genome<T> make_zero_genome(std::size_t len) {
-    return Genome<T>(len, T{});
+template <typename T>
+using Population = std::vector<Genome<T>>;
+struct PopulationMeta {
+    std::size_t population_size;
+    std::size_t genome_size;
+};
+
+template <typename T, typename Generator> requires std::is_arithmetic_v<T>
+Population<T> make_population(const PopulationMeta& arg, Generator&& gene_gen) {
+    Population<T> population;
+    population.reserve(arg.population_size);
+    for (std::size_t i = 0; i < arg.population_size; ++i) {
+        population.push_back(make_genome<T>(arg.genome_size, gene_gen));
+    }
+    return population;
 }
 
-template <typename T> Genome<T> make_filled_genome(std::size_t len, const T& value) {
-    return Genome<T>(len, value);
+// Thread safe generataion id
+class GenomeIdGenerator {
+private:
+    std::atomic<std::uint64_t> next_id_{0};
+    
+public:
+    std::uint64_t allocate_id() {
+        return next_id_.fetch_add(1, std::memory_order_relaxed);
+    }
+};
+
 }
