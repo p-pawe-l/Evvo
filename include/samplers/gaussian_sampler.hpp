@@ -2,20 +2,31 @@
 
 #include <type_traits>
 
-#include "../../util/rand_util.hpp"
-#include "../population_init.hpp"
+#include "sampler.hpp"
+
+#include "../util/rand_util.hpp"
+
+namespace evvo::sampling {
+
+struct GaussianSamplersMeta {
+    double mean;
+    double std_dev;
+};
 
 template <typename SampleT>
     requires std::is_arithmetic_v<SampleT>
-class GaussianSampler : public Sampler<SampleT> {
+class GaussianSampler : public evvo::sampling::AbstractSampler<SampleT> {
 private:
     double mean_;
     double std_dev_;
 
 public:
-    GaussianSampler(double mean, double std_dev) : mean_{mean}, std_dev_{std_dev} {}
+    explicit GaussianSampler(evvo::sampling::GaussianSamplersMeta&& gaussian_meta): 
+        mean_{gaussian_meta.mean}, std_dev_{gaussian_meta.std_dev} {}
 
-    [[nodiscard]] SampleT get_sample() const noexcept override {
+    [[nodiscard]] SampleT get_sample() const override {
         return static_cast<SampleT>(random_gaussian(mean_, std_dev_));
     }
 };
+
+}
