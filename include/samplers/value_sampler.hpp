@@ -1,13 +1,19 @@
 #pragma once
 
-#include "../population_init.hpp"
+#include "sampler.hpp"
 
-template <typename SampleT> class ValueSampler : public Sampler<SampleT> {
+namespace evvo::sampling {
+
+template <typename SampleT> 
+class ValueSampler : public evvo::sampling::AbstractSampler<SampleT> {
 private:
     SampleT val_;
 
 public:
-    explicit ValueSampler(SampleT value) : val_{value} {}
+    explicit ValueSampler(SampleT value): 
+        val_{value} {}
 
-    [[nodiscard]] SampleT get_sample() const noexcept override { return val_; }
+    [[nodiscard]] SampleT get_sample() const override { return val_; }
 };
+
+}
