@@ -1,30 +1,35 @@
 #pragma once
 
-#include <random>
 #include <type_traits>
 
-#include "../../util/rand_util.hpp"
-#include "../population_init.hpp"
+#include "sampler.hpp"
+
+#include "../util/rand_util.hpp"
+
+namespace evvo::sampling {
 
 template <typename SampleT>
     requires std::is_arithmetic_v<SampleT>
-struct RandomSamplerParams {
+struct RandomSamplerRange {
     SampleT low_;
     SampleT high_;
 };
 
 template <typename SampleT>
     requires std::is_arithmetic_v<SampleT>
-class RandomSampler : public Sampler<SampleT> {
+class RandomSampler : public AbstractSampler<SampleT> {
 private:
-    std::pair<SampleT, SampleT> range_;
+    evvo::sampling::RandomSamplerRange<SampleT> range_;
 
 public:
-    explicit RandomSampler(const RandomSamplerParams<SampleT>& params)
-        : range_{params.low_, params.high_} {}
-    RandomSampler(SampleT low, SampleT high) : range_{low, high} {}
+    explicit RandomSampler(evvo::sampling::RandomSamplerRange<SampleT>&& range):
+        range_{std::move(range)} {}
+    RandomSampler(SampleT low, SampleT high): 
+        range_{low, high} {}
 
-    [[nodiscard]] SampleT get_sample() const noexcept override {
+    [[nodiscard]] SampleT get_sample() const override {
         return random_value<SampleT>(range_.first, range_.second);
     }
 };
+
+}
